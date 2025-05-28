@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Instruction Prompt Path",
+    "argName": "--prompt_instruction_path",
+    "type": "string",
+    "required": true,
+    "ui_element": "filePicker",
+    "description": "Path to the file containing prompt instructions for the model",
+    "default_value": ""
+  },
+  {
+    "name": "API Key",
+    "argName": "--api_key",
+    "type": "string",
+    "required": true,
+    "ui_element": "textfield",
+    "description": "DeepSeek API key",
+    "default_value": ""
+  },
+  {
+    "name": "Output Directory",
+    "argName": "--output_dir_path",
+    "type": "string",
+    "required": true,
+    "ui_element": "filePicker",
+    "description": "Directory where the model's output will be saved",
+    "default_value": ""
+  },
+  {
+    "name": "Temperature",
+    "argName": "--temperature",
+    "type": "float",
+    "required": true,
+    "ui_element": "spinner",
+    "description": "Sets the model's temperature, affecting the randomness of the response",
+    "allowed_values": {
+      "min": 0.0,
+      "max": 1.0
+    },
+    "default_value": 0.7,
+    "step": 0.1
+  },
+  {
+    "name": "Debug",
+    "argName": "--debug",
+    "type": "boolean",
+    "required": false,
+    "ui_element": "checkbox",
+    "description": "Enables detailed logs during execution",
+    "default_value": false
+  },
+  {
+    "name": "Model",
+    "argName": "--model",
+    "type": "string",
+    "required": true,
+    "ui_element": "combobox",
+    "description": "DeepSeek model to be used",
+    "allowed_values": ["deepseek-chat", "deepseek-coder"],
+    "default_value": "deepseek-chat"
+  }
+]
