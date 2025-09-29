@@ -14,7 +14,6 @@ import java.io.File
     storages = [Storage("LLMSettings.xml")]
 )
 class LLMSettings : PersistentStateComponent<LLMSettings.State> {
-
     private var myState: State = State()
 
     class State {
@@ -23,6 +22,10 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State> {
 
         @Attribute("selectedLLMName")
         var selectedLLMName: String? = null
+    }
+    override fun noStateLoaded() {
+        println("DEBUG: No state loaded, adding default configurations.")
+        addDefaultConfigurationsIfMissing()
     }
 
     fun getSelectedLLM(): String? = myState.selectedLLMName
@@ -130,13 +133,7 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State> {
             return ApplicationManager.getApplication().getService(LLMSettings::class.java)
         }
 
-        init {
-            val settings = getInstance()
-            if (settings.getConfigurations().isEmpty()) {
-                println("DEBUG: No configurations found on init. Adding defaults...")
-                settings.addDefaultConfigurationsIfMissing()
-            }
-        }
+        // The problematic 'init' block has been removed from here.
     }
 
     override fun getState(): State = myState
