@@ -1,0 +1,27 @@
+User Story 1: User Registration
+Description:
+As a new user, I want to create an account on the web platform so that I can access its features.
+Screen Title: Register
+The registration form must contain the following fields:
+Full Name (inputText) *
+Email (inputText) *
+Password (inputPassword) *
+Confirm Password (inputPassword) *
+I agree to the Terms and Conditions (checkbox) *
+Buttons:
+REGISTER
+When the REGISTER button is clicked, the system must validate the form data. If all fields are correctly filled, the user will be redirected to the Login screen with a success message: "Registration successful! Please log in."
+If the user does not fill in one of the mandatory fields, an error message must be displayed below the respective field: "This field is required!"
+Business Rules:
+BR01 - All fields are mandatory.
+Error message: "This field is required!"
+BR02 - The Email must be in a valid format.
+Error message: "Please enter a valid email address."
+BR03 - The Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number.
+Error message: "Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, and one number."
+BR04 - The Password and Confirm Password fields must match.
+Error message: "Passwords do not match."
+BR05 - The user must agree to the Terms and Conditions.
+Error message: "You must agree to the Terms and Conditions."
+BR06 - A user cannot register with an email that is already in use.
+Error message: "This email is already registered."

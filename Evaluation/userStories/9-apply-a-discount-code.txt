@@ -1,0 +1,18 @@
+User Story 9: Apply a Discount Code
+Description:
+As a customer, I want to apply a discount code to my order in the shopping cart to receive a promotion.
+Screen Title: Shopping Cart
+The form must contain the following fields:
+Discount Code (inputText)
+Buttons:
+APPLY
+When the APPLY button is clicked, the system validates the code. If the code is valid and applicable, the cart total is updated to reflect the discount, and a success message is shown: "Discount code '[Code]' applied successfully."
+Business Rules:
+BR01 - The discount code must exist and be active.
+Error message: "This discount code is not valid."
+BR02 - The discount code cannot be applied to an empty cart.
+Error message: "Your cart is empty."
+BR03 - The discount code may have an expiration date.
+Error message: "This discount code has expired."
+BR04 - A discount code can only be used once per user.
+Error message: "You have already used this discount code."

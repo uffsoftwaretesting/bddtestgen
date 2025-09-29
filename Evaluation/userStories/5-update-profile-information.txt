@@ -1,0 +1,21 @@
+User Story 5: Update Profile Information
+Description:
+As a registered user, I want to update my personal information so that my profile is always current.
+Screen Title: Edit Profile
+The form must contain the following fields:
+First Name (inputText) *
+Last Name (inputText) *
+Phone Number (inputText)
+Date of Birth (datePicker)
+Address (textarea)
+Buttons:
+SAVE CHANGES
+CANCEL
+When the SAVE CHANGES button is clicked, the system validates the form data. If the required fields are filled correctly, the user's information is updated, and a success message is displayed: "Your profile has been updated successfully."
+Business Rules:
+BR01 - First Name and Last Name are mandatory fields.
+Error message: "This field is required!"
+BR02 - The Phone Number, if provided, must contain only numbers and be a specific length (e.g., 10 digits).
+Error message: "Please enter a valid 10-digit phone number."
+BR03 - The Date of Birth must be a valid date and indicate the user is at least 18 years old.
+Error message: "You must be at least 18 years old to use this service."

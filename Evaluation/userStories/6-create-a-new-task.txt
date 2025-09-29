@@ -1,0 +1,21 @@
+User Story 6: Create a New Task (Project Management)
+Description:
+As a team member, I want to create a new task in a project so that I can track its progress.
+Screen Title: New Task
+The form must contain the following fields:
+Task Title (inputText) *
+Project (dropdown) *
+Assignee (user dropdown)
+Due Date (datePicker) *
+Priority (dropdown with options: Low, Medium, High) *
+Description (textarea)
+Buttons:
+CREATE TASK
+When the CREATE TASK button is clicked, the system validates the form. If all required fields are correctly filled, the task is created, and the user is redirected to the project's task board with a success message: "Task '[Task Title]' created successfully."
+Business Rules:
+BR01 - Task Title, Project, Due Date, and Priority are mandatory.
+Error message: "This field is required!"
+BR02 - The Task Title cannot exceed 100 characters.
+Error message: "Title cannot be longer than 100 characters."
+BR03 - The Due Date must not be in the past.
+Error message: "Due date cannot be in the past."

@@ -1,0 +1,19 @@
+User Story 7: Submit a Contact Form
+Description:
+As a website visitor, I want to submit a contact form so that I can ask a question or send feedback.
+Screen Title: Contact Us
+The form must contain the following fields:
+Your Name (inputText) *
+Your Email (inputText) *
+Subject (inputText) *
+Message (textarea) *
+Buttons:
+SUBMIT
+When the SUBMIT button is clicked, the system validates the data. If the form is valid, an email is sent to the support team, and the user sees a confirmation message on the screen: "Thank you for contacting us! We will get back to you shortly."
+Business Rules:
+BR01 - All fields are mandatory.
+Error message: "This field is required!"
+BR02 - The Email field must contain a valid email address.
+Error message: "Please enter a valid email address."
+BR03 - The Message field must contain at least 20 characters.
+Error message: "Message must be at least 20 characters long."

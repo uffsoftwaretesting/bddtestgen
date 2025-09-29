@@ -1,0 +1,1 @@
+4. As a new user, I want to log in via my social media accounts, so that I can quickly access the platform without creating a new account.

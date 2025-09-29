@@ -1,0 +1,1 @@
+6. As a registered user, I want to be able to save items to my wishlist so that I can keep track of products that I am interested in.

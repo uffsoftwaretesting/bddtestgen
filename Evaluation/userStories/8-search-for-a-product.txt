@@ -1,0 +1,15 @@
+User Story 8: Search for a Product
+Description:
+As a customer, I want to search for products using keywords so that I can easily find what I am looking for.
+Screen Title: Home Page / Product Listing Page
+The following elements must be present:
+Search Bar (inputText)
+Search Icon/Button
+When the user types in the search bar and clicks the search button (or presses Enter), the system displays a list of products that match the search term.
+Business Rules:
+BR01 - The search query must be at least three characters long.
+Error message (displayed near the search bar): "Search term must be at least 3 characters long."
+BR02 - If no products match the search query, a message is displayed.
+Message: "No products found for '[search query]'."
+BR03 - The search userStoriesResults page should display the search term.
+On-screen text: "Showing userStoriesResults for '[search query]'."

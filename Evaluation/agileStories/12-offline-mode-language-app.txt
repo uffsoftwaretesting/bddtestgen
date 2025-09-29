@@ -1,0 +1,1 @@
+12. As a language learner, I want an offline mode in the app so I can continue my lessons without an internet connection.

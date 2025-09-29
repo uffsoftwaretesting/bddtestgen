@@ -1,0 +1,23 @@
+User Story 12: Create a Shipping Address
+Description:
+As a user, I want to add a new shipping address to my address book for future checkouts.
+Screen Title: My Account - Address Book
+The form must contain the following fields:
+Full Name (inputText) *
+Address Line 1 (inputText) *
+Address Line 2 (inputText)
+City (inputText) *
+State/Province (dropdown) *
+ZIP/Postal Code (inputText) *
+Country (dropdown) *
+Set as default address (checkbox)
+Buttons:
+SAVE ADDRESS
+When the SAVE ADDRESS button is clicked, the system validates the form. If valid, the new address is added to the user's address book, and a success message is displayed: "Address saved successfully."
+Business Rules:
+BR01 - Full Name, Address Line 1, City, State, ZIP Code, and Country are mandatory.
+Error message: "This field is required!"
+BR02 - The ZIP/Postal Code must be in a valid format for the selected country.
+Error message: "Please enter a valid ZIP/Postal Code."
+BR03 - A user can have a maximum of 5 shipping addresses.
+Error message: "You have reached the maximum number of saved addresses."

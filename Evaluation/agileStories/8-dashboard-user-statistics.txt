@@ -1,0 +1,1 @@
+8. As an admin, I want to see user statistics on my dashboard, so that I can monitor the platform's usage.

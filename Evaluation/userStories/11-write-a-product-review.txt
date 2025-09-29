@@ -1,0 +1,18 @@
+User Story 11: Write a Product Review
+Description:
+As a customer who has purchased a product, I want to write a review and give a rating so that I can share my experience with other shoppers.
+Screen Title: Product Details Page
+The form must contain the following fields:
+Rating (star rating selector, 1-5 stars) *
+Review Title (inputText)
+Review Body (textarea) *
+Buttons:
+SUBMIT REVIEW
+When the SUBMIT REVIEW button is clicked, the system validates the input. If valid, the review is submitted for moderation and a confirmation message appears: "Thank you for your review! It will be posted after being reviewed by our team."
+Business Rules:
+BR01 - Rating and Review Body are mandatory.
+Error message: "This field is required!"
+BR02 - A user must be logged in and have purchased the item to write a review.
+Error message (if not purchased): "You can only review products you have purchased."
+BR03 - The Review Body must contain a minimum of 50 characters.
+Error message: "Your review must be at least 50 characters long."

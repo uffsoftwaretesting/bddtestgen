@@ -1,0 +1,19 @@
+User Story 4: Add Product to Shopping Cart
+Description:
+As a customer, I want to add an item to my shopping cart so that I can purchase it later.
+Screen Title: Product Details Page
+The following elements must be present:
+Quantity (inputNumber) *
+Color (dropdown with available colors)
+Size (dropdown with available sizes)
+Buttons:
+ADD TO CART
+When the ADD TO CART button is clicked, the system must validate the selected options. If the product has variations like color and size, the user must select them. The selected quantity must be available in stock. If the validation passes, the product is added to the cart, and a confirmation message is displayed: "[Product Name] has been added to your cart."
+Business Rules:
+BR01 - The user must select a quantity greater than zero.
+Error message: "Please enter a valid quantity."
+BR02 - If the product has color and size variations, the user must select one of each.
+Error message (if color not selected): "Please select a color."
+Error message (if size not selected): "Please select a size."
+BR03 - The selected quantity cannot exceed the available stock.
+Error message: "The requested quantity is not available."

@@ -1,0 +1,23 @@
+User Story 14: User Checkout - Payment Step
+Description:
+As a customer, I want to enter my payment information during checkout to complete my purchase.
+Screen Title: Checkout - Payment
+The form must contain the following fields:
+Cardholder Name (inputText) *
+Card Number (inputText) *
+Expiration Date (MM/YY format) *
+CVV (inputPassword, 3-4 digits) *
+Buttons:
+PLACE ORDER
+When the PLACE ORDER button is clicked, the system validates the payment information. If valid, the payment is processed. If successful, the user is redirected to an "Order Confirmation" page.
+Business Rules:
+BR01 - All payment fields are mandatory.
+Error message: "This field is required!"
+BR02 - The Card Number must be a valid credit card number format (e.g., passes Luhn algorithm).
+Error message: "Please enter a valid card number."
+BR03 - The Expiration Date cannot be in the past.
+Error message: "Card has expired."
+BR04 - The CVV must be a 3 or 4-digit number.
+Error message: "Please enter a valid CVV."
+BR05 - If payment processing fails (e.g., insufficient funds), an error is displayed.
+Error message: "Your payment could not be processed. Please check your information or try another card."

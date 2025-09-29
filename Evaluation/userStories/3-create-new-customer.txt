@@ -1,0 +1,22 @@
+User Story 3: Create New Customer (Admin Panel)
+Description:
+As an administrator, I want to add a new customer to the system so that I can manage their information and orders.
+Screen Title: Create New Customer
+The form must contain the following fields:
+First Name (inputText) *
+Last Name (inputText) *
+Email (inputText) *
+Phone Number (inputText)
+Status (dropdown with options: Active, Inactive) *
+Buttons:
+SAVE CUSTOMER
+CANCEL
+When the SAVE CUSTOMER button is clicked, the system must validate the form data. If all required fields are correctly filled, the new customer is created, and the administrator is redirected to the customer list with a success message: "Customer created successfully."
+Business Rules:
+BR01 - First Name, Last Name, Email, and Status are mandatory fields.
+Error message: "This field is required!"
+BR02 - The Email must be in a valid format and unique.
+Error message for format: "Please enter a valid email address."
+Error message for uniqueness: "This email address is already in use."
+BR03 - The Phone Number must contain only numbers and have a specific length (e.g., 10 digits).
+Error message: "Please enter a valid 10-digit phone number."

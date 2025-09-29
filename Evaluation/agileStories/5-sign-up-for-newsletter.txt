@@ -1,0 +1,1 @@
+5. As a visitor, I want to sign up easily for the newsletter so I can receive updates and promotions.

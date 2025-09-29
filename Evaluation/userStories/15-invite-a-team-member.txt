@@ -1,0 +1,21 @@
+User Story 15: Invite a Team Member (SaaS Application)
+Description:
+As an account administrator, I want to invite a new user to my team via email so they can collaborate with us.
+Screen Title: Team Management
+The form must contain the following fields:
+Email Address (inputText) *
+Role (dropdown with options: Admin, Member, Viewer) *
+Buttons:
+SEND INVITATION
+When the SEND INVITATION button is clicked, the system validates the form. If valid, an invitation email is sent to the provided address, and the user is added to the "Pending Invitations" list with a success message: "Invitation sent to [email address]."
+Business Rules:
+BR01 - Email Address and Role are mandatory.
+Error message: "This field is required!"
+BR02 - The Email Address must be in a valid format.
+Error message: "Please enter a valid email address."
+BR03 - An invitation cannot be sent to an email address already on the team.
+Error message: "This user is already a member of your team."
+BR04 - An invitation cannot be sent to an email address that already has a pending invitation.
+Error message: "An invitation has already been sent to this email address."
+BR05 - The number of team members cannot exceed the subscription plan's limit.
+Error message: "You have reached the maximum number of users for your plan. Please upgrade to invite more members."

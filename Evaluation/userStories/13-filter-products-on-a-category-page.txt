@@ -1,0 +1,18 @@
+User Story 13: Filter Products on a Category Page
+Description:
+As a customer, I want to filter products by attributes like price, brand, and color so that I can narrow down the product list to my preferences.
+Screen Title: Product Category Page
+The filtering sidebar must contain the following options:
+Price Range (slider or min/max inputFields)
+Brand (checkbox list)
+Color (color swatch checkboxes)
+Buttons:
+APPLY FILTERS
+When the APPLY FILTERS button is clicked, the product grid on the page refreshes to show only the products that match the selected criteria.
+Business Rules:
+BR01 - The minimum price value in the range filter cannot be greater than the maximum price value.
+Error message: "Minimum price cannot be higher than maximum price."
+BR02 - If no products match the selected filters, a message is displayed.
+Message: "No products match your filter criteria. Try removing some filters."
+BR03 - Selected filters should remain active and visible to the user.
+On-screen text (e.g., above the product grid): "Active Filters: [Brand], [Color]."

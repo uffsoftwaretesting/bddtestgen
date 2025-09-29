@@ -1,0 +1,1 @@
+7. As a customer, I want to categorize my transactions, so I can better understand and manage my spending habits.
