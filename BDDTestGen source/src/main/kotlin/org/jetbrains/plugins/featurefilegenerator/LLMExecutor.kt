@@ -65,6 +65,29 @@ class LLMExecutor(private val llmSettings: Any) {
         })
     }
 
+    private fun extractResourceToTempFile(resourcePath: String, prefix: String, suffix: String): String {
+        // Remove "src/main/resources/" if it's there to support the raw relative path in the example
+        val cleanPath = resourcePath.removePrefix("src/main/resources/").removePrefix("/")
+        val inputStream = javaClass.classLoader.getResourceAsStream(cleanPath)
+            ?: throw IllegalArgumentException("Script or resource not found locally nor in classpath: $resourcePath")
+        
+        val tempFile = File.createTempFile(prefix, suffix)
+        tempFile.deleteOnExit()
+        inputStream.use { input ->
+            tempFile.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+        return tempFile.absolutePath
+    }
+
+    private fun resolveFilePath(filePath: String, isPython: Boolean = false): String {
+        val file = File(filePath)
+        if (file.exists()) return file.absolutePath
+        // Try to resolve from classpath
+        return extractResourceToTempFile(filePath, "bddtestgen_script_", if (isPython) ".py" else ".txt")
+    }
+
     /**
      * Builds and runs the LLM process based on configuration and input file.
      */
@@ -75,12 +98,16 @@ class LLMExecutor(private val llmSettings: Any) {
             when (config) {
                 is LLMSettings.LLMConfiguration -> {
                     commandList.add(config.command)
-                    commandList.add(config.scriptFilePath)
+                    commandList.add(resolveFilePath(config.scriptFilePath, isPython = true))
                     config.namedParameters.forEach { param ->
                         if (param.argName.isNotBlank()) {
                             when (param) {
                                 is LLMSettings.StringParam -> {
-                                    val value = param.value.trim()
+                                    var value = param.value.trim()
+                                    // If this is the instruction prompt, we might need to extract it
+                                    if (param.argName == "--prompt_instruction_path") {
+                                        value = resolveFilePath(value)
+                                    }
                                     if (value.isNotBlank()) {
                                         commandList.add(param.argName)
                                         commandList.add(value)
@@ -110,12 +137,15 @@ class LLMExecutor(private val llmSettings: Any) {
                 }
                 is LLMSettingsCLI.LLMConfiguration -> {
                     commandList.add(config.command)
-                    commandList.add(config.scriptFilePath)
+                    commandList.add(resolveFilePath(config.scriptFilePath, isPython = true))
                     config.namedParameters.forEach { param ->
                         if (param.argName.isNotBlank()) {
                             when (param) {
                                 is LLMSettingsCLI.NamedParameter.StringParam -> {
-                                    val value = param.value.trim()
+                                    var value = param.value.trim()
+                                    if (param.argName == "--prompt_instruction_path") {
+                                        value = resolveFilePath(value)
+                                    }
                                     if (value.isNotBlank()) {
                                         commandList.add(param.argName)
                                         commandList.add(value)
@@ -142,18 +172,23 @@ class LLMExecutor(private val llmSettings: Any) {
             commandList.add("--user_story_path")
             commandList.add(filePath)
 
-            // Debug: print the command to be executed
             println("🔍 Executing command: ${commandList.joinToString(" ")}")
 
             val process = ProcessBuilder(commandList)
                 .directory(File("."))
-                .redirectErrorStream(true)
+                .redirectErrorStream(false) // Handle stderr separately for better CLI feedback
                 .start()
 
             val output = process.inputStream.bufferedReader().use { it.readText() }
+            val errorOutput = process.errorStream.bufferedReader().use { it.readText() }
             val exitCode = process.waitFor()
-            println("🔍 Process finished with code: $exitCode")
-            println("🔍 Process output: $output")
+
+            if (exitCode != 0) {
+                println("❌ Process failed with code: $exitCode")
+                if (errorOutput.isNotBlank()) println("❌ Error Output:\n$errorOutput")
+                return "Error (Code $exitCode):\n$errorOutput"
+            }
+
             output
         } catch (e: Exception) {
             "Error executing the process: ${e.message}"
