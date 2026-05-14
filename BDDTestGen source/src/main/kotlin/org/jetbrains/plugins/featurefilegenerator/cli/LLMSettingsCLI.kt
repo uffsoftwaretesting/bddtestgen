@@ -75,7 +75,7 @@ class LLMSettingsCLI(configFilePath: String) : LLMConfigProvider {
     }
 
     override fun getConfiguration(name: String): LLMModelConfig? {
-        return getConfigurationByName(name)?.toDomain()
+        return configurations.find { it.name == name }?.toDomain()
     }
 }
 

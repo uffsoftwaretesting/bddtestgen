@@ -44,6 +44,12 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
         }
     }
 
+    fun executeBatchAsync(filePath: String, onResult: (String, String) -> Unit) {
+        configProvider.getAllConfigurationNames().forEach { llmName ->
+            execute(llmName, filePath, onResult)
+        }
+    }
+
     suspend fun executeBatchCli(filePath: String, onResult: (String, String) -> Unit) = coroutineScope {
         configProvider.getAllConfigurationNames().map { llmName ->
             async {
