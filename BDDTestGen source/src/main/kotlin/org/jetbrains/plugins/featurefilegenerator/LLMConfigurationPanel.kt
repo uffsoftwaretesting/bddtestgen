@@ -111,33 +111,35 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
         val nameField = JBTextField(existingConfig.name)
         addRow("LLM Name:", nameField)
 
-        val scriptField = JBTextField(existingConfig.scriptFilePath)
-        val scriptButton = JButton("Browse").apply {
-            addActionListener {
-                val fileChooser = JFileChooser()
-                fileChooser.fileFilter = FileNameExtensionFilter("Script Files", "sh", "bat", "py")
-                if (fileChooser.showOpenDialog(this@LLMConfigurationPanel) == JFileChooser.APPROVE_OPTION) {
-                    scriptField.text = fileChooser.selectedFile.absolutePath
+        if (existingConfig.scriptFilePath != "native") {
+            val scriptField = JBTextField(existingConfig.scriptFilePath)
+            val scriptButton = JButton("Browse").apply {
+                addActionListener {
+                    val fileChooser = JFileChooser()
+                    fileChooser.fileFilter = FileNameExtensionFilter("Script Files", "sh", "bat", "py")
+                    if (fileChooser.showOpenDialog(this@LLMConfigurationPanel) == JFileChooser.APPROVE_OPTION) {
+                        scriptField.text = fileChooser.selectedFile.absolutePath
+                    }
                 }
             }
-        }
-        addRow("Select Script File:", createHorizontalPanel(scriptField, scriptButton))
+            addRow("Select Script File:", createHorizontalPanel(scriptField, scriptButton))
 
-        val configField = JBTextField(existingConfig.parameterSpecFilePath)
-        val configButton = JButton("Browse").apply {
-            addActionListener {
-                val fileChooser = JFileChooser()
-                fileChooser.fileFilter = FileNameExtensionFilter("Configuration Files", "json", "yaml", "xml")
-                if (fileChooser.showOpenDialog(this@LLMConfigurationPanel) == JFileChooser.APPROVE_OPTION) {
-                    configField.text = fileChooser.selectedFile.absolutePath
-                    renderExistingConfigurationFields(existingConfig)
+            val configField = JBTextField(existingConfig.parameterSpecFilePath)
+            val configButton = JButton("Browse").apply {
+                addActionListener {
+                    val fileChooser = JFileChooser()
+                    fileChooser.fileFilter = FileNameExtensionFilter("Configuration Files", "json", "yaml", "xml")
+                    if (fileChooser.showOpenDialog(this@LLMConfigurationPanel) == JFileChooser.APPROVE_OPTION) {
+                        configField.text = fileChooser.selectedFile.absolutePath
+                        renderExistingConfigurationFields(existingConfig)
+                    }
                 }
             }
-        }
-        addRow("Select Configuration File:", createHorizontalPanel(configField, configButton))
+            addRow("Select Configuration File:", createHorizontalPanel(configField, configButton))
 
-        val commandField = JBTextField(existingConfig.command)
-        addRow("Console Command:", commandField)
+            val commandField = JBTextField(existingConfig.command)
+            addRow("Console Command:", commandField)
+        }
 
         val configPath = existingConfig.parameterSpecFilePath
         if (configPath.isNotBlank() && File(configPath).exists()) {
@@ -150,7 +152,12 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
                 val paramValue = existingConfig.namedParameters.find { it.argName == argName }
 
                 val component = createUIComponentForParameter(spec, paramValue)
-                addRow(paramName, component)
+                
+                if (existingConfig.scriptFilePath == "native" && paramName == "Instruction Prompt Path") {
+                    parameterFieldMap[paramName] = component // Save state silently
+                } else {
+                    addRow(paramName, component)
+                }
             }
         } else {
             dynamicPanel.add(JBLabel("Invalid or non-existent configuration file."), GridBagConstraints())
