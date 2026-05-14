@@ -74,3 +74,44 @@ To generate BDD test cases from a user story:
 	Right click your user story or existing feature file to be enhanced.
 4.  **Generate Test cases:**
 	From the context menu that popped up when right clicking, select "Run BDDTestGen". The plugin will then process the file using your configured LLM and generate the corresponding BDD tests.
+
+## CLI Usage (Command Line Interface)
+
+BDDTestGen also supports a fully automated, model-agnostic command-line interface (CLI) that can be executed outside the IntelliJ IDE using the same compiled `.jar` file.
+
+### Running the CLI
+
+To execute the CLI, run the following command in your terminal:
+
+```bash
+java -cp BDDTestGen.jar org.jetbrains.plugins.featurefilegenerator.cli.BatchGenerateFeatureCLI --config <configFilePath> <inputFilePath>
+```
+
+*   **`<configFilePath>`**: Path to a JSON configuration file defining the LLM profiles and their parameters.
+*   **`<inputFilePath>`**: Path to the plain-text user story file from which BDD scenarios will be generated.
+
+### Configuration JSON Format
+
+The `--config` argument expects a JSON file detailing one or more LLM profiles to process in batch. Below is an example structure:
+
+```json
+{
+  "llms": [
+    {
+      "name": "Gemini-1.5-Flash",
+      "scriptFilePath": "src/main/resources/python/gemini_main.py",
+      "command": "python",
+      "namedParameters": [
+        { "type": "string", "argName": "--api_key", "value": "YOUR_API_KEY_HERE" },
+        { "type": "string", "argName": "--model", "value": "gemini-1.5-flash" },
+        { "type": "double", "argName": "--temperature", "value": 0.7 },
+        { "type": "string", "argName": "--prompt_instruction_path", "value": "src/main/resources/python/message_1_response=user.txt" },
+        { "type": "string", "argName": "--output_dir_path", "value": "output_folder" }
+      ]
+    }
+  ]
+}
+```
+
+The CLI will dynamically load the script and parameters, invoke the LLM connector, and print or export the generated `.feature` files containing the BDD scenarios and structured `Examples` tables.
+
