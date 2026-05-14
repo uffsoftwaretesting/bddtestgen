@@ -71,17 +71,19 @@ class LLMExecutor(private val llmSettings: Any) {
         return inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
     }
 
-    private fun stripGherkinFormatting(string: String): String {
-        val leftStrip = "```gherkin"
+    internal fun stripGherkinFormatting(string: String): String {
+        val leftStripGherkin = "```gherkin"
+        val leftStripGeneric = "```"
         val rightStrip = "```"
         var stripped = string.trim()
-        if (stripped.startsWith(leftStrip)) {
-            stripped = stripped.removePrefix(leftStrip).trim()
+        
+        if (stripped.startsWith(leftStripGherkin) && stripped.endsWith(rightStrip)) {
+            stripped = stripped.removePrefix(leftStripGherkin).removeSuffix(rightStrip)
+        } else if (stripped.startsWith(leftStripGeneric) && stripped.endsWith(rightStrip)) {
+            stripped = stripped.removePrefix(leftStripGeneric).removeSuffix(rightStrip)
         }
-        if (stripped.endsWith(rightStrip)) {
-            stripped = stripped.removeSuffix(rightStrip).trim()
-        }
-        return stripped
+        
+        return stripped.trim()
     }
 
     private fun runProcess(config: Any, filePath: String): String {

@@ -1,0 +1,42 @@
+[
+  {
+    "name": "API Key",
+    "argName": "--api_key",
+    "type": "string",
+    "ui_element": "textfield",
+    "required": true,
+    "description": "Insira sua chave do Google AI Studio"
+  },
+  {
+    "name": "Model",
+    "argName": "--model",
+    "type": "string",
+    "ui_element": "combobox",
+    "allowed_values": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro-vision"],
+    "default_value": "gemini-1.5-flash"
+  },
+  {
+    "name": "Temperature",
+    "argName": "--temperature",
+    "type": "double",
+    "ui_element": "spinner",
+    "allowed_values": { "min": 0, "max": 1 },
+    "default_value": 0.7
+  },
+  {
+    "name": "Instruction Prompt Path",
+    "argName": "--prompt_instruction_path",
+    "type": "string",
+    "ui_element": "filePicker",
+    "required": true,
+    "description": "Caminho para o arquivo .txt com as instruções do sistema"
+  },
+  {
+    "name": "Output Directory",
+    "argName": "--output_dir_path",
+    "type": "string",
+    "ui_element": "filePicker",
+    "required": true,
+    "description": "Pasta onde os arquivos .feature serão salvos"
+  }
+]

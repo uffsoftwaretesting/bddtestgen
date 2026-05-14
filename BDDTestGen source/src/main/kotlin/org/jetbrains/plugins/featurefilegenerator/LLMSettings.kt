@@ -290,7 +290,7 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State> {
         return config
     }
 
-    private fun ensureNamedParameters(parameters: MutableList<NamedParameter>?): MutableList<NamedParameter> {
+    internal fun ensureNamedParameters(parameters: MutableList<NamedParameter>?): MutableList<NamedParameter> {
         if (parameters == null) return mutableListOf()
 
         val fixedParameters = mutableListOf<NamedParameter>()
