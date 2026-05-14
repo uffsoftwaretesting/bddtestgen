@@ -4,6 +4,7 @@ import org.jetbrains.plugins.featurefilegenerator.cli.LLMSettingsCLI
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.File
+import org.jetbrains.plugins.featurefilegenerator.toDomain
 
 class LLMExecutorTest {
 
@@ -39,16 +40,18 @@ class LLMExecutorTest {
         // we can test the internal runProcess by reflection, or we can test parsing behavior.
         
         val method = LLMExecutor::class.java.getDeclaredMethod(
-            "runProcess", 
-            Any::class.java,
+            "runProcessSync", 
+            org.jetbrains.plugins.featurefilegenerator.domain.LLMModelConfig::class.java,
             String::class.java
         )
         method.isAccessible = true
         
-        val result = method.invoke(executor, emptyConfig, tempFile.absolutePath) as String
+        // Converte para o modelo de domínio antes de invocar
+        val domainConfig = emptyConfig.toDomain()
+        val result = method.invoke(executor, domainConfig, tempFile.absolutePath) as String
         
         // Then it should return the specific error message
         assertTrue("Result should indicate missing API key, but was: $result", 
-            result.contains("API Key (--api_key) not provided"))
+            result.contains("API Key ausente"))
     }
 }

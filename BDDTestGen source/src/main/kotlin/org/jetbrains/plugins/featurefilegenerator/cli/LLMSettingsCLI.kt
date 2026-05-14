@@ -3,12 +3,13 @@ package org.jetbrains.plugins.featurefilegenerator.cli
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.jetbrains.plugins.featurefilegenerator.domain.*
 import java.io.File
 
 /**
  * Class responsible for reading LLM configurations from a JSON file provided by the user.
  */
-class LLMSettingsCLI(configFilePath: String) {
+class LLMSettingsCLI(configFilePath: String) : LLMConfigProvider {
 
     @Serializable
     data class LLMConfiguration(
@@ -69,15 +70,27 @@ class LLMSettingsCLI(configFilePath: String) {
         }
     }
 
-    /**
-     * Gets all LLM configurations.
-     */
-    fun getConfigurations(): List<LLMConfiguration> = configurations
-
-    /**
-     * Gets a specific configuration by name.
-     */
-    fun getConfigurationByName(name: String): LLMConfiguration? {
-        return configurations.find { it.name == name }
+    override fun getAllConfigurationNames(): List<String> {
+        return configurations.map { it.name }
     }
+
+    override fun getConfiguration(name: String): LLMModelConfig? {
+        return getConfigurationByName(name)?.toDomain()
+    }
+}
+
+// Extension Mappers para CLI
+fun LLMSettingsCLI.LLMConfiguration.toDomain() = LLMModelConfig(
+    name = this.name,
+    scriptFilePath = this.scriptFilePath,
+    parameterSpecFilePath = "", // CLI uses JSON directly, doesn't need spec file path for UI
+    command = this.command,
+    namedParameters = this.namedParameters.map { it.toDomain() }
+)
+
+fun LLMSettingsCLI.NamedParameter.toDomain(): ModelParameter = when (this) {
+    is LLMSettingsCLI.NamedParameter.StringParam -> StringParam(argName, argName, false, "", value)
+    is LLMSettingsCLI.NamedParameter.BooleanParam -> BooleanParam(argName, argName, false, "", value)
+    is LLMSettingsCLI.NamedParameter.DoubleParam -> DoubleParam(argName, argName, false, "", value)
+    is LLMSettingsCLI.NamedParameter.IntParam -> StringParam(argName, argName, false, "", value.toString())
 }

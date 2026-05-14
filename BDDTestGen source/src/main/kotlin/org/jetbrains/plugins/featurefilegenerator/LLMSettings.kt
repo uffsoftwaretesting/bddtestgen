@@ -7,13 +7,14 @@ import com.intellij.openapi.components.Storage
 import com.intellij.util.xmlb.annotations.Attribute
 import com.intellij.util.xmlb.annotations.Tag
 import com.intellij.util.xmlb.annotations.XCollection
+import org.jetbrains.plugins.featurefilegenerator.domain.*
 import java.io.File
 
 @State(
     name = "LLMSettings",
     storages = [Storage("LLMSettings.xml")]
 )
-class LLMSettings : PersistentStateComponent<LLMSettings.State> {
+class LLMSettings : PersistentStateComponent<LLMSettings.State>, LLMConfigProvider {
     private var myState: State = State()
 
     class State {
@@ -137,6 +138,14 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State> {
     }
 
     override fun getState(): State = myState
+
+    override fun getAllConfigurationNames(): List<String> {
+        return myState.configurations.map { it.name }
+    }
+
+    override fun getConfiguration(name: String): LLMModelConfig? {
+        return getConfigurationByName(name)?.toDomain()
+    }
 
     override fun loadState(state: State) {
         myState = state
@@ -296,13 +305,8 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State> {
         val fixedParameters = mutableListOf<NamedParameter>()
 
         parameters.forEach { param ->
-            when (param) {
-                is NamedParameter -> {
-                    fixedParameters.add(param)
-                }
-                else -> {
-                    println("DEBUG: ⚠ Unexpected type found in namedParameters: ${param?.javaClass?.name}")
-                }
+            if (param != null) {
+                fixedParameters.add(param)
             }
         }
 
@@ -310,4 +314,20 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State> {
     }
 
     private fun isValidFilePath(path: String): Boolean = File(path).exists()
+}
+
+// Extension Mappers para separar Domínio de Infraestrutura
+fun LLMSettings.LLMConfiguration.toDomain() = LLMModelConfig(
+    name = this.name,
+    scriptFilePath = this.scriptFilePath,
+    parameterSpecFilePath = this.parameterSpecFilePath,
+    command = this.command,
+    namedParameters = this.namedParameters.map { it.toDomain() }
+)
+
+fun LLMSettings.NamedParameter.toDomain(): ModelParameter = when (this) {
+    is LLMSettings.StringParam -> StringParam(key, argName, required, description, value)
+    is LLMSettings.BooleanParam -> BooleanParam(key, argName, required, description, value)
+    is LLMSettings.DoubleParam -> DoubleParam(key, argName, required, description, value)
+    is LLMSettings.ListParam -> ListParam(key, argName, required, description, value, allowedValues)
 }

@@ -6,9 +6,14 @@ import org.junit.Test
 
 class GherkinSanitizerTest {
 
+    private val mockProvider = object : org.jetbrains.plugins.featurefilegenerator.domain.LLMConfigProvider {
+        override fun getConfiguration(name: String) = null
+        override fun getAllConfigurationNames() = emptyList<String>()
+    }
+
     @Test
     fun `test stripGherkinFormatting removes markdown blocks`() {
-        val executor = LLMExecutor(Any())
+        val executor = LLMExecutor(mockProvider)
         val input = """
             ```gherkin
             Feature: Test
@@ -22,14 +27,14 @@ class GherkinSanitizerTest {
 
     @Test
     fun `test stripGherkinFormatting works with plain text`() {
-        val executor = LLMExecutor(Any())
+        val executor = LLMExecutor(mockProvider)
         val input = "Feature: Only text"
         assertEquals("Feature: Only text", executor.stripGherkinFormatting(input))
     }
 
     @Test
     fun `test stripGherkinFormatting removes generic code blocks`() {
-        val executor = LLMExecutor(Any())
+        val executor = LLMExecutor(mockProvider)
         val input = "```\nFeature: Generic\n```"
         assertEquals("Feature: Generic", executor.stripGherkinFormatting(input).trim())
     }
