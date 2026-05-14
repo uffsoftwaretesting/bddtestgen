@@ -83,7 +83,9 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State>, LLMConfigProvid
 
         @Attribute("description")
         open var description: String = ""
-    )
+    ) {
+        abstract fun getValueAsString(): String
+    }
 
     @Tag("StringParam")
     class StringParam(
@@ -93,7 +95,9 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State>, LLMConfigProvid
         description: String = "",
         @Attribute("value")
         var value: String = ""
-    ) : NamedParameter(key, argName, required, description)
+    ) : NamedParameter(key, argName, required, description) {
+        override fun getValueAsString(): String = value
+    }
 
     @Tag("IntParam")
     class IntParam(
@@ -103,7 +107,9 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State>, LLMConfigProvid
         description: String = "",
         @Attribute("value")
         var value: Int = 0
-    ) : NamedParameter(key, argName, required, description)
+    ) : NamedParameter(key, argName, required, description) {
+        override fun getValueAsString(): String = value.toString()
+    }
 
     @Tag("DoubleParam")
     class DoubleParam(
@@ -113,7 +119,9 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State>, LLMConfigProvid
         description: String = "",
         @Attribute("value")
         var value: Double = 0.0
-    ) : NamedParameter(key, argName, required, description)
+    ) : NamedParameter(key, argName, required, description) {
+        override fun getValueAsString(): String = value.toString()
+    }
 
     @Tag("BooleanParam")
     class BooleanParam(
@@ -123,7 +131,9 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State>, LLMConfigProvid
         description: String = "",
         @Attribute("value")
         var value: Boolean = false
-    ) : NamedParameter(key, argName, required, description)
+    ) : NamedParameter(key, argName, required, description) {
+        override fun getValueAsString(): String = value.toString()
+    }
 
     @Tag("ListParam")
     class ListParam(
@@ -136,7 +146,9 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State>, LLMConfigProvid
 
         @XCollection(propertyElementName = "allowedValues", elementName = "option")
         var allowedValues: List<String> = emptyList()
-    ) : NamedParameter(key, argName, required, description)
+    ) : NamedParameter(key, argName, required, description) {
+        override fun getValueAsString(): String = value
+    }
 
     companion object {
         fun getInstance(): LLMSettings {

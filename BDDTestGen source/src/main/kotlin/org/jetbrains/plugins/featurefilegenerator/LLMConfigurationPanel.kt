@@ -112,34 +112,6 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
         addRow("LLM Name:", nameField)
 
         if (existingConfig.scriptFilePath != "native") {
-            val scriptField = JBTextField(existingConfig.scriptFilePath)
-            val scriptButton = JButton("Browse").apply {
-                addActionListener {
-                    val fileChooser = JFileChooser()
-                    fileChooser.fileFilter = FileNameExtensionFilter("Script Files", "sh", "bat", "py")
-                    if (fileChooser.showOpenDialog(this@LLMConfigurationPanel) == JFileChooser.APPROVE_OPTION) {
-                        scriptField.text = fileChooser.selectedFile.absolutePath
-                    }
-                }
-            }
-            addRow("Select Script File:", createHorizontalPanel(scriptField, scriptButton))
-
-            val configField = JBTextField(existingConfig.parameterSpecFilePath)
-            val configButton = JButton("Browse").apply {
-                addActionListener {
-                    val fileChooser = JFileChooser()
-                    fileChooser.fileFilter = FileNameExtensionFilter("Configuration Files", "json", "yaml", "xml")
-                    if (fileChooser.showOpenDialog(this@LLMConfigurationPanel) == JFileChooser.APPROVE_OPTION) {
-                        configField.text = fileChooser.selectedFile.absolutePath
-                        renderExistingConfigurationFields(existingConfig)
-                    }
-                }
-            }
-            addRow("Select Configuration File:", createHorizontalPanel(configField, configButton))
-
-            val commandField = JBTextField(existingConfig.command)
-            addRow("Console Command:", commandField)
-
             val apiUrlField = JBTextField(existingConfig.apiUrl)
             addRow("API URL:", apiUrlField)
             
@@ -291,34 +263,6 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
         val nameField = JBTextField()
         addRow("LLM Name:", nameField)
 
-        val scriptField = JBTextField()
-        val scriptButton = JButton("Browse").apply {
-            addActionListener {
-                val fileChooser = JFileChooser()
-                fileChooser.fileFilter = FileNameExtensionFilter("Script Files", "sh", "bat", "py")
-                if (fileChooser.showOpenDialog(this@LLMConfigurationPanel) == JFileChooser.APPROVE_OPTION) {
-                    scriptField.text = fileChooser.selectedFile.absolutePath
-                }
-            }
-        }
-        addRow("Select Script File:", createHorizontalPanel(scriptField, scriptButton))
-
-        val configField = JBTextField()
-        val configButton = JButton("Browse").apply {
-            addActionListener {
-                val fileChooser = JFileChooser()
-                fileChooser.fileFilter = FileNameExtensionFilter("Configuration Files", "json", "yaml", "xml")
-                if (fileChooser.showOpenDialog(this@LLMConfigurationPanel) == JFileChooser.APPROVE_OPTION) {
-                    configField.text = fileChooser.selectedFile.absolutePath
-                    renderNewConfigurationFields()
-                }
-            }
-        }
-        addRow("Select Configuration File:", createHorizontalPanel(configField, configButton))
-
-        val commandField = JBTextField()
-        addRow("Console Command:", commandField)
-
         val apiUrlField = JBTextField()
         addRow("API URL:", apiUrlField)
         
@@ -328,23 +272,11 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
         val apiPathField = JBTextField()
         addRow("API Result JSON Path:", apiPathField)
 
-        if (configField.text.isNotBlank() && File(configField.text).exists()) {
-            val specifications = loadParameterSpecifications(configField.text)
-            for (spec in specifications) {
-                val paramName = spec["name"]?.toString() ?: "Unnamed"
-                val component = createUIComponentForParameter(spec, null)
-                addRow(paramName, component)
-            }
-        }
-
         gbc.gridwidth = 2
         val saveButton = JButton("Save").apply {
             addActionListener {
                 saveNewConfiguration(
                     nameField.text,
-                    scriptField.text,
-                    configField.text,
-                    commandField.text,
                     apiUrlField.text,
                     apiBodyField.text,
                     apiPathField.text
@@ -357,19 +289,9 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
         dynamicPanel.repaint()
     }
 
-    private fun saveNewConfiguration(name: String, scriptPath: String, configPath: String, command: String, apiUrl: String, body: String, path: String) {
-        if (name.isBlank()) {
-            JOptionPane.showMessageDialog(this, "LLM Name is required!", "Error", JOptionPane.ERROR_MESSAGE)
-            return
-        }
-
-        // Se não houver API Genérica, exige campos de script
-        if (apiUrl.isBlank() && (scriptPath.isBlank() || configPath.isBlank() || command.isBlank())) {
-            JOptionPane.showMessageDialog(this, "Provide either a Generic API URL or a local Script setup!", "Error", JOptionPane.ERROR_MESSAGE)
-            return
-        }
-        if (!File(scriptPath).exists() || !File(configPath).exists()) {
-            JOptionPane.showMessageDialog(this, "Selected files do not exist!", "Error", JOptionPane.ERROR_MESSAGE)
+    private fun saveNewConfiguration(name: String, apiUrl: String, body: String, path: String) {
+        if (name.isBlank() || apiUrl.isBlank() || body.isBlank()) {
+            JOptionPane.showMessageDialog(this, "Name, API URL and Body Template are required!", "Error", JOptionPane.ERROR_MESSAGE)
             return
         }
 
@@ -383,9 +305,9 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
         // Create new configuration
         val newConfiguration = LLMSettings.LLMConfiguration(
             name = name,
-            scriptFilePath = scriptPath,
-            parameterSpecFilePath = configPath,
-            command = command,
+            scriptFilePath = "", // Legacy field
+            parameterSpecFilePath = "", // Legacy field
+            command = "", // Legacy field
             apiUrl = apiUrl,
             apiBodyTemplate = body,
             apiResultPath = path

@@ -8,6 +8,7 @@ import com.intellij.ui.components.JBTextField
 import org.jetbrains.plugins.featurefilegenerator.LLMConfigurationPanel
 import org.jetbrains.plugins.featurefilegenerator.LLMSettings
 import java.awt.BorderLayout
+import java.io.File
 import javax.swing.*
 
 class ChangeConfigsAction : AnAction() {
@@ -90,26 +91,17 @@ class ChangeConfigsAction : AnAction() {
                 }
 
                 // ✅ Extract script file, config file, and command
-                val scriptField = configurationPanel.parameterFieldMap["Select Script File:"] as? JBTextField
-                val configField = configurationPanel.parameterFieldMap["Select Configuration File:"] as? JBTextField
-                val commandField = configurationPanel.parameterFieldMap["Console Command:"] as? JBTextField
                 val apiUrlField = configurationPanel.parameterFieldMap["API URL:"] as? JBTextField
                 val apiBodyField = configurationPanel.parameterFieldMap["API Body Template:"] as? JBTextField
                 val apiPathField = configurationPanel.parameterFieldMap["API Result JSON Path:"] as? JBTextField
 
-                val updatedScriptPath = scriptField?.text?.trim() ?: existingConfig.scriptFilePath
-                val updatedConfigPath = configField?.text?.trim() ?: existingConfig.parameterSpecFilePath
-                val updatedCommand = commandField?.text?.trim() ?: existingConfig.command
                 val updatedApiUrl = apiUrlField?.text?.trim() ?: existingConfig.apiUrl
                 val updatedApiBody = apiBodyField?.text?.trim() ?: existingConfig.apiBodyTemplate
                 val updatedApiPath = apiPathField?.text?.trim() ?: existingConfig.apiResultPath
 
-                // Se não for nativo e não houver API Genérica, exige campos de script
-                if (updatedScriptPath != "native" && updatedApiUrl.isEmpty()) {
-                    if (updatedScriptPath.isEmpty() || updatedConfigPath.isEmpty() || updatedCommand.isEmpty()) {
-                        showError("Provide either a Generic API URL or a complete local Script setup.")
-                        return
-                    }
+                if (existingConfig.scriptFilePath != "native" && updatedApiUrl.isEmpty()) {
+                    showError("API URL is required for custom configurations.")
+                    return
                 }
 
                 // ✅ Preserve unchecked booleans
@@ -125,9 +117,9 @@ class ChangeConfigsAction : AnAction() {
                 // ✅ Build and save updated config
                 val updatedConfig = LLMSettings.LLMConfiguration(
                     name = existingConfig.name,
-                    scriptFilePath = updatedScriptPath,
-                    parameterSpecFilePath = updatedConfigPath,
-                    command = updatedCommand,
+                    scriptFilePath = existingConfig.scriptFilePath,
+                    parameterSpecFilePath = existingConfig.parameterSpecFilePath,
+                    command = existingConfig.command,
                     apiUrl = updatedApiUrl,
                     apiBodyTemplate = updatedApiBody,
                     apiResultPath = updatedApiPath,
