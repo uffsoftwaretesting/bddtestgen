@@ -316,7 +316,7 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State>, LLMConfigProvid
     private fun isValidFilePath(path: String): Boolean = File(path).exists()
 }
 
-// Extension Mappers para separar Domínio de Infraestrutura
+// Extension Mappers to separate Domain from Infrastructure
 fun LLMSettings.LLMConfiguration.toDomain() = LLMModelConfig(
     name = this.name,
     scriptFilePath = this.scriptFilePath,
@@ -330,5 +330,5 @@ fun LLMSettings.NamedParameter.toDomain(): ModelParameter = when (this) {
     is LLMSettings.BooleanParam -> BooleanParam(key, argName, required, description, value)
     is LLMSettings.DoubleParam -> DoubleParam(key, argName, required, description, value)
     is LLMSettings.ListParam -> ListParam(key, argName, required, description, value, allowedValues)
-    else -> throw IllegalArgumentException("Tipo de parâmetro desconhecido")
+    else -> throw IllegalArgumentException("Unknown parameter type")
 }

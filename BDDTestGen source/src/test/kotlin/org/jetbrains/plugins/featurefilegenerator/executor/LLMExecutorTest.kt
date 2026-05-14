@@ -52,6 +52,6 @@ class LLMExecutorTest {
         
         // Then it should return the specific error message
         assertTrue("Result should indicate missing API key, but was: $result", 
-            result.contains("API Key ausente"))
+            result.contains("API Key missing"))
     }
 }

@@ -26,13 +26,13 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
 
     fun execute(llmName: String, filePath: String, onResult: (String, String) -> Unit) {
         val config = configProvider.getConfiguration(llmName)
-            ?: throw IllegalArgumentException("LLM '$llmName' não encontrado.")
+            ?: throw IllegalArgumentException("LLM '$llmName' not found.")
 
-        // Se estiver no IntelliJ (detector simples de ambiente)
+        // If inside IntelliJ (simple environment detection)
         if (isInsideIntellij()) {
-            ProgressManager.getInstance().run(object : Task.Backgroundable(null, "Gerando BDD ($llmName)", true) {
+            ProgressManager.getInstance().run(object : Task.Backgroundable(null, "Generating BDD ($llmName)", true) {
                 override fun run(indicator: ProgressIndicator) {
-                    indicator.text = "Chamando LLM: $llmName..."
+                    indicator.text = "Calling LLM: $llmName..."
                     val result = runProcessSync(config, filePath)
                     onResult(llmName, result)
                 }
@@ -67,7 +67,7 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
                 executeExternalScript(config, filePath)
             }
         } catch (e: Exception) {
-            "❌ Erro: ${e.message}"
+            "❌ Error: ${e.message}"
         }
     }
 
@@ -81,14 +81,14 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
             "chatgpt", "openai" -> executeOpenAI(paramsMap, instructionPrompt, storyText)
             "gemini" -> executeGemini(paramsMap, instructionPrompt, storyText)
             "deepseek" -> executeDeepSeek(paramsMap, instructionPrompt, storyText)
-            else -> throw IllegalArgumentException("Modelo nativo '${config.name}' não suportado.")
+            else -> throw IllegalArgumentException("Native model '${config.name}' not supported.")
         }
 
         val strippedResult = stripGherkinFormatting(result)
         
-        // Lógica de salvamento (Infraestrutura)
+        // Saving logic (Infrastructure)
         val outputDir = paramsMap["--output_dir_path"]
-        if (!outputDir.isNullOrBlank() && !strippedResult.startsWith("❌ Erro")) {
+        if (!outputDir.isNullOrBlank() && !strippedResult.startsWith("❌ Error")) {
             saveResultToFile(outputDir, config.name, strippedResult)
         }
         
@@ -114,10 +114,10 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
 
     // --- Métodos de Apoio (Poderiam ser extraídos para um LLMClient) ---
 
-    private fun executeOpenAI(params: Map<String, String>, instruction: String, story: String): String {
-        val apiKey = params["--api_key"] ?: throw IllegalArgumentException("API Key ausente.")
-        val model = params["--model"] ?: "gpt-4o"
-        val temp = params["--temperature"]?.toDoubleOrNull() ?: 0.7
+    private fun executeOpenAI(paramsMap: Map<String, String>, instruction: String, story: String): String {
+        val apiKey = paramsMap["--api_key"] ?: throw IllegalArgumentException("API Key missing.")
+        val model = paramsMap["--model"] ?: "gpt-4o"
+        val temp = paramsMap["--temperature"]?.toDoubleOrNull() ?: 0.7
 
         val payload = buildJsonObject {
             put("model", model)
@@ -131,9 +131,9 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
         return callHttpApi("https://api.openai.com/v1/chat/completions", apiKey, payload, "choices", "message", "content")
     }
 
-    private fun executeGemini(params: Map<String, String>, instruction: String, story: String): String {
-        val apiKey = params["--api_key"] ?: throw IllegalArgumentException("API Key ausente.")
-        val model = params["--model"] ?: "gemini-1.5-flash"
+    private fun executeGemini(paramsMap: Map<String, String>, instruction: String, story: String): String {
+        val apiKey = paramsMap["--api_key"] ?: throw IllegalArgumentException("API Key missing.")
+        val model = paramsMap["--model"] ?: "gemini-1.5-flash"
         
         val url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey"
         
@@ -150,10 +150,10 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
         return callHttpApi(url, "", payload, "candidates", "content", "parts", "0", "text")
     }
 
-    private fun executeDeepSeek(params: Map<String, String>, instruction: String, story: String): String {
-        val apiKey = params["--api_key"] ?: throw IllegalArgumentException("API Key ausente.")
-        val model = params["--model"] ?: "deepseek-chat"
-        val temp = params["--temperature"]?.toDoubleOrNull() ?: 0.7
+    private fun executeDeepSeek(paramsMap: Map<String, String>, instruction: String, story: String): String {
+        val apiKey = paramsMap["--api_key"] ?: throw IllegalArgumentException("API Key missing.")
+        val model = paramsMap["--model"] ?: "deepseek-chat"
+        val temp = paramsMap["--temperature"]?.toDoubleOrNull() ?: 0.7
 
         val payload = buildJsonObject {
             put("model", model)
@@ -180,7 +180,7 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
         val response = httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString())
         
         if (response.statusCode() != 200) {
-            return "❌ Erro API (${response.statusCode()}): ${response.body()}"
+            return "❌ API Error (${response.statusCode()}): ${response.body()}"
         }
 
         return try {
@@ -188,17 +188,17 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
             var current: JsonElement = json
             for (segment in path) {
                 current = when (current) {
-                    is JsonObject -> current[segment] ?: return "❌ Erro: Campo '$segment' não encontrado na resposta."
+                    is JsonObject -> current[segment] ?: return "❌ Error: Field '$segment' not found in response."
                     is JsonArray -> {
-                        val index = segment.toIntOrNull() ?: return "❌ Erro: Indice '$segment' invalido."
+                        val index = segment.toIntOrNull() ?: return "❌ Error: Invalid index '$segment'."
                         current[index]
                     }
-                    else -> return "❌ Erro: Estrutura JSON inesperada."
+                    else -> return "❌ Error: Unexpected JSON structure."
                 }
             }
             current.jsonPrimitive.content
         } catch (e: Exception) {
-            "❌ Erro ao processar JSON: ${e.message}"
+            "❌ Error processing JSON: ${e.message}"
         }
     }
 
@@ -208,9 +208,9 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
             if (!directory.exists()) directory.mkdirs()
             val fileName = "${modelName.lowercase().replace(" ", "_")}_output.feature"
             File(directory, fileName).writeText(content)
-            println("✅ Resposta salva em: ${File(directory, fileName).absolutePath}")
+            println("✅ Response saved at: ${File(directory, fileName).absolutePath}")
         } catch (e: Exception) {
-            println("❌ Falha ao salvar arquivo: ${e.message}")
+            println("❌ Failed to save file: ${e.message}")
         }
     }
 
