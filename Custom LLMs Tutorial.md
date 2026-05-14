@@ -1,27 +1,14 @@
 # Integrating Custom LLMs into the BDDTestGen Plugin
 
-This document outlines the process for integrating a custom Large Language Model (a.k.a. LLM) into the BDDTestGen plugin. By following these instructions, you can configure the plugin to use any LLM that can be operated via a command-line script.
+This document outlines the process for integrating a custom Large Language Model (a.k.a. LLM) into the BDDTestGen plugin. With the migration to a native Kotlin architecture, integrating custom models is easier than ever and requires **zero external scripts or dependencies** like Python.
 
 ## Overview
 
-The plugin's architecture is designed to be extensible, allowing users to connect to virtually any LLM. This is achieved by defining a clear interface between the plugin and the LLM's execution logic. The integration relies on two primary components that you, the user, must provide:
+The plugin natively communicates with LLM APIs using standard HTTP requests. To add a custom LLM, you only need to provide a **Specification File (`.json`)**. This file defines the configuration parameters (like API Key, Model, and Custom Endpoint) and dictates how the UI in the plugin's settings will be rendered.
 
-1.  **A Specification File (`.json`)**: This file defines the configuration parameters for your LLM and dictates how the UI in the plugin's settings will be rendered.
-2.  **An Execution Script**: This is a command-line script (e.g., in Python, Bash, PowerShell) that the plugin calls to run the LLM. It acts as a bridge between the plugin and the LLM's API.
+By analyzing the name of your LLM or its custom endpoint, the plugin automatically routes the request using either the OpenAI-compatible or the Gemini-compatible format.
 
-## Core Components
-
-Before diving into the setup, it's essential to understand the roles of these two components.
-
-| Component | Purpose |
-| :--- | :--- |
-| **Specification File (`.json`)** | Defines the user interface for your LLM's settings in IntelliJ. It lists all configurable parameters, their types, and how they should be displayed (e.g., text fields, checkboxes, dropdowns). |
-| **Execution Script** | Receives the configuration values from the UI as command-line arguments. It is responsible for making the API call to the LLM and saving the output to a specified file path. |
-
----
-
-<details>
-<summary><h2>1. The Specification File (`.json`)</h2></summary>
+## Core Component: The Specification File (`.json`)
 
 This JSON file is a list of objects, where each object defines a single configuration parameter for your LLM.
 
@@ -32,7 +19,7 @@ Each object in the JSON array must contain the following fields:
 | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `name` | String | Yes | The display name of the parameter in the plugin's UI (e.g., "API Key"). |
-| `argName` | String | Yes | The command-line argument that corresponds to this parameter (e.g., `--api_key`). |
+| `argName` | String | Yes | The internal argument name that the plugin reads (e.g., `--api_key`). |
 | `type` | String | Yes | The data type of the parameter (e.g., `string`, `float`, `boolean`). |
 | `required` | Boolean | Yes | Specifies if this parameter is mandatory. |
 | `ui_element` | String | Yes | The type of UI component to render for this parameter. See [UI Element Types](#ui-element-types) below. |
@@ -41,19 +28,26 @@ Each object in the JSON array must contain the following fields:
 | `allowed_values`| Array/Object | No | A list of allowed values, used by `combobox` and `spinner` UI elements. |
 | `step` | Number | No | The increment step for `spinner` UI elements. |
 
-### UI Element Types
+### Reserved Internal Arguments (`argName`)
 
-The `ui_element` field determines how the parameter is displayed in the settings panel:
+The native Kotlin executor looks for specific `argName` values to construct the API request. To ensure your LLM works correctly, use the following `argName` conventions:
 
-| `ui_element` | Description | Additional Fields |
+| `argName` | Description | Required |
 | :--- | :--- | :--- |
-| `textfield` | A standard text input field. | - |
-| `filePicker` | A text field with a "Browse" button to select files or directories. | - |
-| `checkbox` | A checkbox for boolean (true/false) values. | - |
-| `combobox` | A dropdown menu with a list of options. | `allowed_values`: An array of strings (e.g., `["model-a", "model-b"]`). |
-| `spinner` | A number input with up/down arrows. | `allowed_values`: An object with `min` and `max` keys (e.g., `{"min": 0.0, "max": 1.0}`).<br>`step`: A number defining the increment value. |
+| `--api_key` | The API Key for authenticating the request. | **Yes** |
+| `--model` | The model identifier (e.g., `gpt-4`, `llama3`). | **Yes** |
+| `--temperature` | Floating-point temperature for generation (e.g., `0.7`). | **Yes** |
+| `--prompt_instruction_path` | (Or `--instruction_file`) Path to the instruction prompt `.txt`. | **Yes** |
+| `--endpoint` | (Or `--api_base`) **Optional** Custom API endpoint URL. Useful for local models like LMStudio or Ollama (e.g., `http://localhost:1234/v1/chat/completions`). | No |
 
-### Example (`gemini_specifications.json`)
+### Routing Logic
+
+*   If your LLM Name contains **`gemini`** (case-insensitive), the plugin uses the Google Gemini REST format.
+*   If your LLM Name contains **`deepseek`**, it points to `https://api.deepseek.com/chat/completions`.
+*   **Default Behavior:** If the name doesn't match the above, the plugin assumes an **OpenAI-compatible** API and defaults to `https://api.openai.com/v1/chat/completions`.
+*   **Custom URLs:** If you provide an `--endpoint` parameter, the plugin will override the default URLs and send an OpenAI-compatible JSON payload directly to your custom URL.
+
+### Example (`custom_specifications.json`)
 
 ```json
 [
@@ -63,7 +57,7 @@ The `ui_element` field determines how the parameter is displayed in the settings
     "type": "string",
     "required": true,
     "ui_element": "filePicker",
-    "description": "Path to the predefined instruction to be applied to the user story",
+    "description": "Path to the predefined instruction",
     "default_value": ""
   },
   {
@@ -72,7 +66,7 @@ The `ui_element` field determines how the parameter is displayed in the settings
     "type": "string",
     "required": true,
     "ui_element": "textfield",
-    "description": "Google Gemini API key",
+    "description": "API key for the model",
     "default_value": ""
   },
   {
@@ -81,117 +75,41 @@ The `ui_element` field determines how the parameter is displayed in the settings
     "type": "string",
     "required": true,
     "ui_element": "combobox",
-    "description": "The model to use for generating completions",
+    "description": "The model to use",
     "allowed_values": [
-      "gemini-1.5-flash",
-      "gemini-1.5-pro"
+      "llama-3-8b",
+      "mistral-7b"
     ],
-    "default_value": "gemini-1.5-flash"
+    "default_value": "llama-3-8b"
+  },
+  {
+    "name": "Custom Endpoint",
+    "argName": "--endpoint",
+    "type": "string",
+    "required": false,
+    "ui_element": "textfield",
+    "description": "Optional: Override the default API URL (e.g., for local LMStudio)",
+    "default_value": "http://localhost:1234/v1/chat/completions"
   }
 ]
 ```
-</details>
 
 ---
 
-<details>
-<summary><h2>2. The Execution Script</h2></summary>
+## How to Add a New LLM in IntelliJ IDEA
 
-This script can be written in any language (Python, Bash, etc.) as long as it is executable from the command line.
+Once you have created your specification `.json` file, you can add it to the plugin:
 
-### Purpose
-
-The plugin will invoke this script, passing the values configured in the UI as command-line arguments. The script must then use these arguments to communicate with the LLM API and save the generated output.
-
-### Required Command-Line Arguments
-
-Your script **must** be able to accept the following arguments, in addition to the custom ones you define in your specification file:
-
-| Argument | Description |
-| :--- | :--- |
-| `--user_story_path` | The absolute path to a temporary text file containing the user story to be processed. |
-| `--output_dir_path` | The absolute path to the directory where the script **must** save its output. |
-
-### Script Responsibilities
-
-1.  **Parse Arguments**: The script must parse all incoming command-line arguments.
-2.  **Read Input Files**: It needs to read the content of the files specified by `--prompt_instruction_path` (if defined in your spec) and `--user_story_path`.
-3.  **Call the LLM API**: Using the parsed arguments (like API key, temperature, model, etc.), it should make a request to the LLM's API.
-4.  **Save the Output**: The script **must** save the response from the LLM into a `.feature` file inside the directory specified by `--output_dir_path`. The filename can be anything, for instance `llm_output.feature`.
-
-### Example (`gemini_main.py`)
-
-This Python script demonstrates how to parse arguments, interact with an API, and save the output.
-
-```python
-import argparse
-import os
-import google.generativeai as genai
-
-def main():
-    parser = argparse.ArgumentParser(description="Parser for the Gemini API")
-
-    # Arguments from the specification file
-    parser.add_argument('--prompt_instruction_path', type=str, required=True)
-    parser.add_argument('--api_key', type=str, required=True)
-    parser.add_argument('--temperature', type=float, required=True)
-    parser.add_argument('--model', type=str, required=True)
-    
-    # Required arguments from the plugin
-    parser.add_argument('--user_story_path', type=str, required=True)
-    parser.add_argument('--output_dir_path', type=str, required=True)
-
-    args = parser.parse_args()
-
-    # --- Script Logic ---
-    # 1. Configure API
-    genai.configure(api_key=args.api_key)
-    model = genai.GenerativeModel(args.model)
-
-    # 2. Read input files
-    with open(args.prompt_instruction_path, 'r') as file:
-        instruction = file.read()
-    with open(args.user_story_path, 'r') as file:
-        user_story = file.read()
-
-    prompt = f"{instruction}\n\n{user_story}"
-
-    # 3. Call LLM API
-    response = model.generate_content(prompt)
-    
-    # 4. Save the output
-    os.makedirs(args.output_dir_path, exist_ok=True)
-    output_file = os.path.join(args.output_dir_path, "gemini_output.feature")
-    with open(output_file, 'w') as file:
-        file.write(response.text)
-
-    print(f"Response saved at: {output_file}")
-
-if __name__ == "__main__":
-    main()
-```
-</details>
-
----
-
-<details>
-<summary><h2>How to Add a New LLM in IntelliJ IDEA</h2></summary>
-
-Once you have created your specification `.json` file and your execution script, you can add them to the plugin.
-
-### Step-by-Step Guide
-
-1.  Navigate to **File > Settings > Tools > LLM Configuration**.
+1.  Navigate to **File > Settings > Tools > BDDTestGen**.
 2.  Click on the dropdown menu at the top. It will show a list of existing LLM configurations.
 3.  Select **"Insert new"** from the bottom of the list.
 4.  A new set of fields will appear. Fill them out as follows:
-    *   **LLM Name:** A unique, descriptive name for your LLM (e.g., "My Custom WizardLLM").
-    *   **Select Script File:** Click "Browse" and locate your execution script (e.g., `wizard_main.sh`).
-    *   **Select Configuration File:** Click "Browse" and locate your specification file (e.g., `wizard_spec.json`).
-    *   **Console Command:** The command used to execute your script (e.g., `python3`, `bash`, `node`).
+    *   **LLM Name:** A unique, descriptive name for your LLM (e.g., "Local Llama 3"). *Note: If it contains 'gemini', it will use the Google format.*
+    *   **Select Script File:** Type `native` (This field is kept for legacy compatibility but is ignored by the engine).
+    *   **Select Configuration File:** Click "Browse" and locate your specification `.json` file.
+    *   **Console Command:** Type `native`.
 5.  After selecting the configuration file, the UI will dynamically render the parameters you defined in the JSON.
-6.  Fill in any necessary default values for your new LLM's parameters.
-7.  Click the **"Save"** button to add your new configuration.
+6.  Fill in the values (API Key, Model, Custom Endpoint, etc.).
+7.  Click **"Apply"** or **"OK"** to save your new configuration.
 
-Your custom LLM is now ready to be used by the BDDTestGen plugin!
-</details>
+Your custom, scriptless LLM is now fully configured and ready to generate Gherkin features!

@@ -131,6 +131,7 @@ class LLMExecutor(private val llmSettings: Any) {
             val model = paramsMap["model"] ?: if (providerName.contains("gemini", true)) "gemini-1.5-flash" else "gpt-3.5-turbo"
             val temperature = paramsMap["temperature"]?.toDoubleOrNull() ?: 0.7
             val promptPath = paramsMap["prompt_instruction_path"] ?: paramsMap["instruction_file"]
+            val customEndpoint = paramsMap["endpoint"] ?: paramsMap["api_base"]
             
             val instructionPrompt = promptPath?.let { readResourceOrFile(it) } ?: ""
             val userStory = File(filePath).readText(Charsets.UTF_8)
@@ -142,7 +143,7 @@ class LLMExecutor(private val llmSettings: Any) {
             val result = if (providerName.contains("gemini", ignoreCase = true)) {
                 executeGemini(client, apiKey, model, temperature, instructionPrompt, userStory)
             } else {
-                executeOpenAI(client, providerName, apiKey, model, temperature, instructionPrompt, userStory)
+                executeOpenAI(client, providerName, apiKey, model, temperature, instructionPrompt, userStory, customEndpoint)
             }
             
             stripGherkinFormatting(result)
@@ -188,8 +189,8 @@ class LLMExecutor(private val llmSettings: Any) {
             ?: "❌ Error: Could not parse Gemini response."
     }
 
-    private fun executeOpenAI(client: HttpClient, providerName: String, apiKey: String, model: String, temperature: Double, instruction: String, story: String): String {
-        val url = if (providerName.contains("deepseek", ignoreCase = true)) {
+    private fun executeOpenAI(client: HttpClient, providerName: String, apiKey: String, model: String, temperature: Double, instruction: String, story: String, customEndpoint: String?): String {
+        val url = customEndpoint ?: if (providerName.contains("deepseek", ignoreCase = true)) {
             "https://api.deepseek.com/chat/completions"
         } else {
             "https://api.openai.com/v1/chat/completions"
