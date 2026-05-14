@@ -136,14 +136,28 @@ class LLMExecutor(private val llmSettings: Any) {
             val instructionPrompt = promptPath?.let { readResourceOrFile(it) } ?: ""
             val userStory = File(filePath).readText(Charsets.UTF_8)
 
-            println("🔍 Sending API Request to $providerName (Model: $model)")
+            val scriptPath = when (config) {
+                is LLMSettings.LLMConfiguration -> config.scriptFilePath
+                is LLMSettingsCLI.LLMConfiguration -> config.scriptFilePath
+                else -> "native"
+            }
+            val command = when (config) {
+                is LLMSettings.LLMConfiguration -> config.command
+                is LLMSettingsCLI.LLMConfiguration -> config.command
+                else -> "python"
+            }
 
-            val client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build()
-            
-            val result = if (providerName.contains("gemini", ignoreCase = true)) {
-                executeGemini(client, apiKey, model, temperature, instructionPrompt, userStory)
+            val result = if (scriptPath == "native") {
+                println("🔍 Sending Native API Request to $providerName (Model: $model)")
+                val client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build()
+                if (providerName.contains("gemini", ignoreCase = true)) {
+                    executeGemini(client, apiKey, model, temperature, instructionPrompt, userStory)
+                } else {
+                    executeOpenAI(client, providerName, apiKey, model, temperature, instructionPrompt, userStory, customEndpoint)
+                }
             } else {
-                executeOpenAI(client, providerName, apiKey, model, temperature, instructionPrompt, userStory, customEndpoint)
+                println("🚀 Executing External Script: $command $scriptPath")
+                executeExternalScript(command, scriptPath, filePath, config)
             }
             val strippedResult = stripGherkinFormatting(result)
             
@@ -241,6 +255,60 @@ class LLMExecutor(private val llmSettings: Any) {
             ?.get("message")?.jsonObject
             ?.get("content")?.jsonPrimitive?.content 
             ?: "❌ Error: Could not parse OpenAI/DeepSeek response."
+    }
+
+    private fun executeExternalScript(command: String, scriptPath: String, filePath: String, config: Any?): String {
+        val commandList = mutableListOf(command, scriptPath, filePath)
+        
+        when (config) {
+            is LLMSettings.LLMConfiguration -> {
+                config.namedParameters.forEach { param ->
+                    if (param.argName.isNotBlank()) {
+                        commandList.add(param.argName)
+                        val value = when (param) {
+                            is LLMSettings.StringParam -> param.value
+                            is LLMSettings.ListParam -> param.value
+                            is LLMSettings.IntParam -> param.value.toString()
+                            is LLMSettings.DoubleParam -> param.value.toString()
+                            is LLMSettings.BooleanParam -> param.value.toString()
+                            else -> ""
+                        }
+                        commandList.add(value)
+                    }
+                }
+            }
+            is LLMSettingsCLI.LLMConfiguration -> {
+                config.namedParameters.forEach { param ->
+                    if (param.argName.isNotBlank()) {
+                        commandList.add(param.argName)
+                        val value = when (param) {
+                            is LLMSettingsCLI.NamedParameter.StringParam -> param.value
+                            is LLMSettingsCLI.NamedParameter.IntParam -> param.value.toString()
+                            is LLMSettingsCLI.NamedParameter.DoubleParam -> param.value.toString()
+                            is LLMSettingsCLI.NamedParameter.BooleanParam -> param.value.toString()
+                            else -> ""
+                        }
+                        commandList.add(value)
+                    }
+                }
+            }
+        }
+
+        return try {
+            val processBuilder = ProcessBuilder(commandList)
+            processBuilder.redirectErrorStream(true)
+            val process = processBuilder.start()
+            val result = process.inputStream.bufferedReader().readText()
+            val exitCode = process.waitFor()
+            
+            if (exitCode != 0) {
+                "❌ External Script Error (Code $exitCode):\n$result"
+            } else {
+                result
+            }
+        } catch (e: Exception) {
+            "❌ Failed to execute external script: ${e.message}\nMake sure '$command' is in your PATH and '$scriptPath' exists."
+        }
     }
 
     fun executeBatchCli(filePath: String, onResult: (String, String) -> Unit) = runBlocking {
