@@ -152,16 +152,22 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State> {
                 else -> null
             }
 
-            if (specResource != null && !File(config.parameterSpecFilePath).exists()) {
-                config.parameterSpecFilePath = copyResourceToTempFile(specResource, ".json")
+            val tempDir = System.getProperty("java.io.tmpdir")
+
+            if (specResource != null) {
+                // Only overwrite if it's already pointing to a temp file or if it's empty
+                if (config.parameterSpecFilePath.isBlank() || config.parameterSpecFilePath.startsWith(tempDir)) {
+                    config.parameterSpecFilePath = copyResourceToTempFile(specResource, ".json")
+                }
             }
 
             config.namedParameters = ensureNamedParameters(config.namedParameters)
 
             config.namedParameters.forEach { param ->
                 if (param is StringParam && param.key == "Instruction Prompt Path") {
-                    if (!File(param.value).exists()) {
-                        println("DEBUG: Instruction prompt file ${param.value} does not exist. Recreating...")
+                    // Only update if it points to our managed temp space
+                    if (param.value.isBlank() || param.value.contains("bddtestgen_")) {
+                        println("DEBUG: Updating default instruction prompt content...")
                         param.value = copyResourceToTempFile(
                             "python/message_1_response=user.txt",
                             ".txt"
@@ -220,19 +226,18 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State> {
         val inputStream = javaClass.classLoader.getResourceAsStream(resourcePath)
             ?: throw IllegalArgumentException("Resource not found: $resourcePath")
 
-        val tempFile = File.createTempFile(
-            resourcePath.substringAfterLast("/").substringBeforeLast("."),
-            suffix.ifEmpty { ".tmp" }
-        )
-        tempFile.deleteOnExit()
-
+        val fileName = resourcePath.substringAfterLast("/")
+        val tempDir = System.getProperty("java.io.tmpdir")
+        val tempFile = File(tempDir, "bddtestgen_$fileName")
+        
+        // Always overwrite to ensure updates are reflected
         inputStream.use { input ->
             tempFile.outputStream().use { output ->
                 input.copyTo(output)
             }
         }
 
-        println("DEBUG: Copied resource $resourcePath to temp file ${tempFile.absolutePath}")
+        println("DEBUG: Updated resource $resourcePath at ${tempFile.absolutePath}")
         return tempFile.absolutePath
     }
 
