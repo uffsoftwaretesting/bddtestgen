@@ -56,7 +56,7 @@
     "required": true,
     "ui_element": "combobox",
     "description": "DeepSeek model to be used",
-    "allowed_values": ["deepseek-chat", "deepseek-coder"],
-    "default_value": "deepseek-chat"
+    "allowed_values": ["deepseek-v4-pro", "deepseek-v4-flash", "deepseek-r1", "deepseek-chat", "deepseek-reasoner"],
+    "default_value": "deepseek-v4-flash"
   }
 ]

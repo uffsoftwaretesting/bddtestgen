@@ -70,7 +70,7 @@
         "required": true,
         "ui_element": "combobox",
         "description": "The model to use for generating completions",
-        "allowed_values": ["gpt-4o","gpt-3.5-turbo", "gpt-4", "gpt-4-32k"],
-        "default_value": "gpt-3.5-turbo"
+        "allowed_values": ["gpt-5.5", "gpt-5.5-instant", "gpt-4o", "gpt-4o-mini", "o1-preview", "o3-mini"],
+        "default_value": "gpt-5.5-instant"
     }
 ]

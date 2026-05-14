@@ -128,7 +128,7 @@ class LLMExecutor(private val llmSettings: Any) {
             }
 
             val apiKey = paramsMap["api_key"]?.takeIf { it.isNotBlank() } ?: return "Error: API Key (--api_key) not provided in configuration."
-            val model = paramsMap["model"] ?: if (providerName.contains("gemini", true)) "gemini-1.5-flash" else "gpt-3.5-turbo"
+            val model = paramsMap["model"] ?: if (providerName.contains("gemini", true)) "gemini-3-flash" else "gpt-5.5-instant"
             val temperature = paramsMap["temperature"]?.toDoubleOrNull() ?: 0.7
             val promptPath = paramsMap["prompt_instruction_path"] ?: paramsMap["instruction_file"]
             val customEndpoint = paramsMap["endpoint"] ?: paramsMap["api_base"]
