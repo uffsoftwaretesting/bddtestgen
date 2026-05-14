@@ -11,7 +11,7 @@ This document provides instructions for manual installation, configuration, and 
 Before you begin, ensure you have the following installed:
 
 *   **IntelliJ IDEA:** Version 2025.2 or later.
-*   **Python:** A recent version of Python must be installed and accessible from your system's PATH.
+*   *Note: BDD TestGen is now 100% native (Java/Kotlin) and **no longer requires Python** or any external dependencies.*
 
 ## Installation
 
@@ -28,36 +28,15 @@ To manually install the BDD TestGen plugin, follow these steps:
     *   In the file browser, locate and select the downloaded `.zip` file.
     *   Click "OK" and restart IntelliJ IDEA when prompted.
 
-## Dependencies
-
-The plugin comes with three default LLM scripts. To use a specific LLM, you must install its corresponding Python library if you haven't already.
-
-Note: Dependency versions below are confirmed to work but future versions are likely to work.
-*   **For ChatGPT:**
-    ```bash
-    pip install openai==1.106.1
-    ```
-
-*   **For Gemini:**
-    ```bash
-    pip install google-generativeai==0.8.5
-    ```
-
-*   **For DeepSeek:**
-    ```bash
-    pip install requests==2.32.5
-    ```
-
 ## Configuration
 
 Before using the plugin, you need to configure your desired LLM profile:
 
 1.  **Access Settings:**
     In the IntelliJ IDEA menu, go to `Tools` -> `Change BDDTestGen Settings`.
-    *  To show the menu, click the four stripes icon on the top left corner of the IDE window. 
 2.  **Enter Your Settings and Credentials:**
-    A dialog box will appear. Select the LLM you wish to use from the available profiles. The required fields will vary depending on the selected LLM. Fill in the necessary information (e.g., API keys, model names).
-    Pay special attention to the Console Command field. For windows it's usually "python", for linux it's usually python3.
+    A dialog box will appear. Select the LLM you wish to use from the available profiles (e.g., ChatGPT, Gemini, DeepSeek). Fill in the necessary information (e.g., API keys, model names).
+    *The plugin comes pre-configured to hit the official endpoints for these providers.*
 3.  **Save and Select:**
     Click "OK" to save your settings. The selected LLM profile is now active and future runs will use it.
 
@@ -77,18 +56,18 @@ To generate BDD test cases from a user story:
 
 ## CLI Usage (Command Line Interface)
 
-BDDTestGen supports a fully automated, model-agnostic CLI. You can execute it directly from your terminal using the compiled `.jar` file.
+BDDTestGen supports a fully automated, standalone CLI built with the Clikt framework. You can execute it directly from your terminal using the compiled `.jar` file or Gradle wrapper.
 
 ### Running the CLI
 
 To see all available options and help:
 ```bash
-java -cp BDDTestGen.jar org.jetbrains.plugins.featurefilegenerator.cli.BatchGenerateFeatureCLI --help
+./gradlew runCLI --args="--help"
 ```
 
 To execute a generation:
 ```bash
-java -cp BDDTestGen.jar org.jetbrains.plugins.featurefilegenerator.cli.BatchGenerateFeatureCLI --config <configFilePath> <inputFilePath>
+./gradlew runCLI --args="--config <configFilePath> <inputFilePath>"
 ```
 
 *   **`--config` (or `-c`)**: Path to a JSON configuration file defining the LLM profiles.
@@ -96,21 +75,21 @@ java -cp BDDTestGen.jar org.jetbrains.plugins.featurefilegenerator.cli.BatchGene
 
 ### Configuration JSON Format
 
-The CLI is now portable. You can refer to bundled scripts directly by their internal paths (e.g., `python/gemini_main.py`), and the tool will automatically extract them to a temporary directory if they are not found on disk.
+The CLI is completely native. You provide the JSON configuration with the required parameters, and the Kotlin engine takes care of the REST HTTP calls automatically.
 
 Example `config.json`:
 ```json
 {
   "llms": [
     {
-      "name": "Gemini-1.5-Flash",
-      "scriptFilePath": "python/gemini_main.py",
-      "command": "python",
+      "name": "Gemini",
+      "scriptFilePath": "native",
+      "command": "native",
       "namedParameters": [
         { "type": "string", "argName": "--api_key", "value": "YOUR_API_KEY_HERE" },
-        { "type": "string", "argName": "--model", "value": "gemini-1.5-flash" },
+        { "type": "string", "argName": "--model", "value": "gemini-3-flash" },
         { "type": "double", "argName": "--temperature", "value": 0.7 },
-        { "type": "string", "argName": "--prompt_instruction_path", "value": "python/message_1_response=user.txt" },
+        { "type": "string", "argName": "--prompt_instruction_path", "value": "prompt.txt" },
         { "type": "string", "argName": "--output_dir_path", "value": "output_folder" }
       ]
     }
@@ -118,5 +97,6 @@ Example `config.json`:
 }
 ```
 
-The CLI will dynamically load the connectors, execute the LLMs, and output the generated `.feature` files.
+The CLI will dynamically load the configuration, execute the LLMs concurrently (if in a batch), and output the generated `.feature` files.
+
 
