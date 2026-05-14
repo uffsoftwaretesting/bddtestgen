@@ -74,3 +74,49 @@ To generate BDD test cases from a user story:
 	Right click your user story or existing feature file to be enhanced.
 4.  **Generate Test cases:**
 	From the context menu that popped up when right clicking, select "Run BDDTestGen". The plugin will then process the file using your configured LLM and generate the corresponding BDD tests.
+
+## CLI Usage (Command Line Interface)
+
+BDDTestGen supports a fully automated, model-agnostic CLI. You can execute it directly from your terminal using the compiled `.jar` file.
+
+### Running the CLI
+
+To see all available options and help:
+```bash
+java -cp BDDTestGen.jar org.jetbrains.plugins.featurefilegenerator.cli.BatchGenerateFeatureCLI --help
+```
+
+To execute a generation:
+```bash
+java -cp BDDTestGen.jar org.jetbrains.plugins.featurefilegenerator.cli.BatchGenerateFeatureCLI --config <configFilePath> <inputFilePath>
+```
+
+*   **`--config` (or `-c`)**: Path to a JSON configuration file defining the LLM profiles.
+*   **`<inputFilePath>`**: Path to the plain-text user story file.
+
+### Configuration JSON Format
+
+The CLI is now portable. You can refer to bundled scripts directly by their internal paths (e.g., `python/gemini_main.py`), and the tool will automatically extract them to a temporary directory if they are not found on disk.
+
+Example `config.json`:
+```json
+{
+  "llms": [
+    {
+      "name": "Gemini-1.5-Flash",
+      "scriptFilePath": "python/gemini_main.py",
+      "command": "python",
+      "namedParameters": [
+        { "type": "string", "argName": "--api_key", "value": "YOUR_API_KEY_HERE" },
+        { "type": "string", "argName": "--model", "value": "gemini-1.5-flash" },
+        { "type": "double", "argName": "--temperature", "value": 0.7 },
+        { "type": "string", "argName": "--prompt_instruction_path", "value": "python/message_1_response=user.txt" },
+        { "type": "string", "argName": "--output_dir_path", "value": "output_folder" }
+      ]
+    }
+  ]
+}
+```
+
+The CLI will dynamically load the connectors, execute the LLMs, and output the generated `.feature` files.
+

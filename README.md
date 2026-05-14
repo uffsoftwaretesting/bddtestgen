@@ -77,35 +77,40 @@ To generate BDD test cases from a user story:
 
 ## CLI Usage (Command Line Interface)
 
-BDDTestGen also supports a fully automated, model-agnostic command-line interface (CLI) that can be executed outside the IntelliJ IDE using the same compiled `.jar` file.
+BDDTestGen supports a fully automated, model-agnostic CLI. You can execute it directly from your terminal using the compiled `.jar` file.
 
 ### Running the CLI
 
-To execute the CLI, run the following command in your terminal:
+To see all available options and help:
+```bash
+java -cp BDDTestGen.jar org.jetbrains.plugins.featurefilegenerator.cli.BatchGenerateFeatureCLI --help
+```
 
+To execute a generation:
 ```bash
 java -cp BDDTestGen.jar org.jetbrains.plugins.featurefilegenerator.cli.BatchGenerateFeatureCLI --config <configFilePath> <inputFilePath>
 ```
 
-*   **`<configFilePath>`**: Path to a JSON configuration file defining the LLM profiles and their parameters.
-*   **`<inputFilePath>`**: Path to the plain-text user story file from which BDD scenarios will be generated.
+*   **`--config` (or `-c`)**: Path to a JSON configuration file defining the LLM profiles.
+*   **`<inputFilePath>`**: Path to the plain-text user story file.
 
 ### Configuration JSON Format
 
-The `--config` argument expects a JSON file detailing one or more LLM profiles to process in batch. Below is an example structure:
+The CLI is now portable. You can refer to bundled scripts directly by their internal paths (e.g., `python/gemini_main.py`), and the tool will automatically extract them to a temporary directory if they are not found on disk.
 
+Example `config.json`:
 ```json
 {
   "llms": [
     {
       "name": "Gemini-1.5-Flash",
-      "scriptFilePath": "src/main/resources/python/gemini_main.py",
+      "scriptFilePath": "python/gemini_main.py",
       "command": "python",
       "namedParameters": [
         { "type": "string", "argName": "--api_key", "value": "YOUR_API_KEY_HERE" },
         { "type": "string", "argName": "--model", "value": "gemini-1.5-flash" },
         { "type": "double", "argName": "--temperature", "value": 0.7 },
-        { "type": "string", "argName": "--prompt_instruction_path", "value": "src/main/resources/python/message_1_response=user.txt" },
+        { "type": "string", "argName": "--prompt_instruction_path", "value": "python/message_1_response=user.txt" },
         { "type": "string", "argName": "--output_dir_path", "value": "output_folder" }
       ]
     }
@@ -113,5 +118,6 @@ The `--config` argument expects a JSON file detailing one or more LLM profiles t
 }
 ```
 
-The CLI will dynamically load the script and parameters, invoke the LLM connector, and print or export the generated `.feature` files containing the BDD scenarios and structured `Examples` tables.
+The CLI will dynamically load the connectors, execute the LLMs, and output the generated `.feature` files.
+
 
