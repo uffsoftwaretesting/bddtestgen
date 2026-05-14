@@ -18,7 +18,7 @@ class LLMExecutorTest {
         dummySpec.deleteOnExit()
 
         val emptyConfig = org.jetbrains.plugins.featurefilegenerator.LLMSettings.LLMConfiguration(
-            name = "TestLLM",
+            name = "OpenAI",
             scriptFilePath = "native",
             parameterSpecFilePath = dummySpec.absolutePath,
             command = "native",
