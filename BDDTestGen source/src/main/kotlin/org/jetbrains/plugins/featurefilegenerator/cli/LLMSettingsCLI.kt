@@ -14,9 +14,12 @@ class LLMSettingsCLI(configFilePath: String) : LLMConfigProvider {
     @Serializable
     data class LLMConfiguration(
         val name: String,
-        val scriptFilePath: String,
-        val command: String,
-        val namedParameters: List<NamedParameter>
+        val scriptFilePath: String = "",
+        val command: String = "",
+        val apiUrl: String = "",
+        val apiBodyTemplate: String = "",
+        val apiResultPath: String = "",
+        val namedParameters: List<NamedParameter> = emptyList()
     )
 
     @Serializable
@@ -83,8 +86,11 @@ class LLMSettingsCLI(configFilePath: String) : LLMConfigProvider {
 fun LLMSettingsCLI.LLMConfiguration.toDomain() = LLMModelConfig(
     name = this.name,
     scriptFilePath = this.scriptFilePath,
-    parameterSpecFilePath = "", // CLI uses JSON directly, doesn't need spec file path for UI
+    parameterSpecFilePath = "", // CLI uses JSON directly
     command = this.command,
+    apiUrl = this.apiUrl,
+    apiBodyTemplate = this.apiBodyTemplate,
+    apiResultPath = this.apiResultPath,
     namedParameters = this.namedParameters.map { it.toDomain() }
 )
 

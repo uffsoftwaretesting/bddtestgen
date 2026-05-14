@@ -139,6 +139,15 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
 
             val commandField = JBTextField(existingConfig.command)
             addRow("Console Command:", commandField)
+
+            val apiUrlField = JBTextField(existingConfig.apiUrl)
+            addRow("API URL:", apiUrlField)
+            
+            val apiBodyField = JBTextField(existingConfig.apiBodyTemplate)
+            addRow("API Body Template:", apiBodyField)
+            
+            val apiPathField = JBTextField(existingConfig.apiResultPath)
+            addRow("API Result JSON Path:", apiPathField)
         }
 
         val configPath = existingConfig.parameterSpecFilePath
@@ -307,6 +316,15 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
         val commandField = JBTextField()
         addRow("Console Command:", commandField)
 
+        val apiUrlField = JBTextField()
+        addRow("API URL:", apiUrlField)
+        
+        val apiBodyField = JBTextField()
+        addRow("API Body Template:", apiBodyField)
+        
+        val apiPathField = JBTextField()
+        addRow("API Result JSON Path:", apiPathField)
+
         if (configField.text.isNotBlank() && File(configField.text).exists()) {
             val specifications = loadParameterSpecifications(configField.text)
             for (spec in specifications) {
@@ -323,7 +341,10 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
                     nameField.text,
                     scriptField.text,
                     configField.text,
-                    commandField.text
+                    commandField.text,
+                    apiUrlField.text,
+                    apiBodyField.text,
+                    apiPathField.text
                 )
             }
         }
@@ -333,9 +354,15 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
         dynamicPanel.repaint()
     }
 
-    private fun saveNewConfiguration(name: String, scriptPath: String, configPath: String, command: String) {
-        if (name.isBlank() || scriptPath.isBlank() || configPath.isBlank() || command.isBlank()) {
-            JOptionPane.showMessageDialog(this, "All fields must be filled out!", "Error", JOptionPane.ERROR_MESSAGE)
+    private fun saveNewConfiguration(name: String, scriptPath: String, configPath: String, command: String, apiUrl: String, body: String, path: String) {
+        if (name.isBlank()) {
+            JOptionPane.showMessageDialog(this, "LLM Name is required!", "Error", JOptionPane.ERROR_MESSAGE)
+            return
+        }
+
+        // Se não houver API Genérica, exige campos de script
+        if (apiUrl.isBlank() && (scriptPath.isBlank() || configPath.isBlank() || command.isBlank())) {
+            JOptionPane.showMessageDialog(this, "Provide either a Generic API URL or a local Script setup!", "Error", JOptionPane.ERROR_MESSAGE)
             return
         }
         if (!File(scriptPath).exists() || !File(configPath).exists()) {
@@ -355,7 +382,10 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
             name = name,
             scriptFilePath = scriptPath,
             parameterSpecFilePath = configPath,
-            command = command // Adding the command field here
+            command = command,
+            apiUrl = apiUrl,
+            apiBodyTemplate = body,
+            apiResultPath = path
         )
 
         try {

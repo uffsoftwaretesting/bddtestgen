@@ -94,24 +94,23 @@ class ChangeConfigsAction : AnAction() {
                 val scriptField = configurationPanel.parameterFieldMap["Select Script File:"] as? JBTextField
                 val configField = configurationPanel.parameterFieldMap["Select Configuration File:"] as? JBTextField
                 val commandField = configurationPanel.parameterFieldMap["Console Command:"] as? JBTextField
+                val apiUrlField = configurationPanel.parameterFieldMap["API URL:"] as? JBTextField
+                val apiBodyField = configurationPanel.parameterFieldMap["API Body Template:"] as? JBTextField
+                val apiPathField = configurationPanel.parameterFieldMap["API Result JSON Path:"] as? JBTextField
 
                 val updatedScriptPath = scriptField?.text?.trim() ?: existingConfig.scriptFilePath
                 val updatedConfigPath = configField?.text?.trim() ?: existingConfig.parameterSpecFilePath
                 val updatedCommand = commandField?.text?.trim() ?: existingConfig.command
+                val updatedApiUrl = apiUrlField?.text?.trim() ?: existingConfig.apiUrl
+                val updatedApiBody = apiBodyField?.text?.trim() ?: existingConfig.apiBodyTemplate
+                val updatedApiPath = apiPathField?.text?.trim() ?: existingConfig.apiResultPath
 
-                if (updatedScriptPath.isEmpty()) {
-                    showError("The field 'Select Script File' is required and cannot be empty.")
-                    return
-                }
-
-                if (updatedConfigPath.isEmpty()) {
-                    showError("The field 'Select Configuration File' is required and cannot be empty.")
-                    return
-                }
-
-                if (updatedCommand.isEmpty()) {
-                    showError("The field 'Console Command' is required and cannot be empty.")
-                    return
+                // Se não for nativo e não houver API Genérica, exige campos de script
+                if (updatedScriptPath != "native" && updatedApiUrl.isEmpty()) {
+                    if (updatedScriptPath.isEmpty() || updatedConfigPath.isEmpty() || updatedCommand.isEmpty()) {
+                        showError("Provide either a Generic API URL or a complete local Script setup.")
+                        return
+                    }
                 }
 
                 // ✅ Preserve unchecked booleans
@@ -130,6 +129,9 @@ class ChangeConfigsAction : AnAction() {
                     scriptFilePath = updatedScriptPath,
                     parameterSpecFilePath = updatedConfigPath,
                     command = updatedCommand,
+                    apiUrl = updatedApiUrl,
+                    apiBodyTemplate = updatedApiBody,
+                    apiResultPath = updatedApiPath,
                     namedParameters = updatedParams
                 )
 

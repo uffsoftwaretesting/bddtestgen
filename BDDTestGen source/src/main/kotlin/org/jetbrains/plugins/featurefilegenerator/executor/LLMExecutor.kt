@@ -61,7 +61,9 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
 
     private fun runProcessSync(config: LLMModelConfig, filePath: String): String {
         return try {
-            if (config.scriptFilePath == "native") {
+            if (!config.apiUrl.isNullOrBlank()) {
+                executeGenericApi(config, filePath)
+            } else if (config.scriptFilePath == "native") {
                 executeNative(config, filePath)
             } else {
                 executeExternalScript(config, filePath)
@@ -69,6 +71,28 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
         } catch (e: Exception) {
             "❌ Error: ${e.message}"
         }
+    }
+
+    private fun executeGenericApi(config: LLMModelConfig, filePath: String): String {
+        val storyText = File(filePath).readText()
+            .replace("\"", "\\\"") // Escape quotes for JSON
+            .replace("\n", "\\n")
+        
+        var body = config.apiBodyTemplate ?: "{}"
+        
+        // Template replacement
+        body = body.replace("{{story}}", storyText)
+        config.namedParameters.forEach { param ->
+            body = body.replace("{{${param.key}}}", param.getValueAsString())
+        }
+
+        val payload = Json.parseToJsonElement(body).jsonObject
+        val path = config.apiResultPath?.split(".")?.toTypedArray() ?: arrayOf("text")
+        
+        // We look for api_key in parameters
+        val apiKey = config.namedParameters.find { it.key == "api_key" || it.key == "apiKey" }?.getValueAsString() ?: ""
+
+        return callHttpApi(config.apiUrl!!, apiKey, payload, *path)
     }
 
     private fun executeNative(config: LLMModelConfig, filePath: String): String {

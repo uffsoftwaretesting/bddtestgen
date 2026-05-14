@@ -9,6 +9,10 @@ data class LLMModelConfig(
     val scriptFilePath: String,
     val parameterSpecFilePath: String,
     val command: String,
+    // Generic API Studio Fields
+    val apiUrl: String? = null,
+    val apiBodyTemplate: String? = null,
+    val apiResultPath: String? = null,
     val namedParameters: List<ModelParameter> = emptyList()
 )
 

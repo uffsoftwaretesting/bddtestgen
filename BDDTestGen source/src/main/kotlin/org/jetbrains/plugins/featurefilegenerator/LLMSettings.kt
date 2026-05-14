@@ -49,6 +49,15 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State>, LLMConfigProvid
         @Attribute("command")
         var command: String = "",
 
+        @Attribute("apiUrl")
+        var apiUrl: String = "",
+
+        @Attribute("apiBodyTemplate")
+        var apiBodyTemplate: String = "",
+
+        @Attribute("apiResultPath")
+        var apiResultPath: String = "",
+
         @XCollection(
             propertyElementName = "parameters",
             style = XCollection.Style.v2,
@@ -322,6 +331,9 @@ fun LLMSettings.LLMConfiguration.toDomain() = LLMModelConfig(
     scriptFilePath = this.scriptFilePath,
     parameterSpecFilePath = this.parameterSpecFilePath,
     command = this.command,
+    apiUrl = this.apiUrl,
+    apiBodyTemplate = this.apiBodyTemplate,
+    apiResultPath = this.apiResultPath,
     namedParameters = this.namedParameters.map { it.toDomain() }
 )
 
