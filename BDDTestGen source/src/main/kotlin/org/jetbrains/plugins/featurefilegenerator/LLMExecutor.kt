@@ -145,8 +145,20 @@ class LLMExecutor(private val llmSettings: Any) {
             } else {
                 executeOpenAI(client, providerName, apiKey, model, temperature, instructionPrompt, userStory, customEndpoint)
             }
+            val strippedResult = stripGherkinFormatting(result)
             
-            stripGherkinFormatting(result)
+            val outputDir = paramsMap["output_dir_path"]
+            if (!outputDir.isNullOrBlank() && !strippedResult.startsWith("❌ Error")) {
+                val dir = File(outputDir)
+                if (!dir.exists()) dir.mkdirs()
+                
+                val safeProviderName = providerName.replace(Regex("[^a-zA-Z0-9.-]"), "_").lowercase()
+                val outputFile = File(dir, "${safeProviderName}_output.feature")
+                outputFile.writeText(strippedResult, Charsets.UTF_8)
+                println("✅ Response saved at: ${outputFile.absolutePath}")
+            }
+            
+            strippedResult
         } catch (e: Exception) {
             "❌ Error executing the API call: ${e.message}"
         }
