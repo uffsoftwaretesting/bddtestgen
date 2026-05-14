@@ -5,6 +5,7 @@ import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 plugins {
     id("java") // Java support
     alias(libs.plugins.kotlin) // Kotlin support
+    kotlin("plugin.serialization") version "2.2.0"
     alias(libs.plugins.intelliJPlatform) // IntelliJ Platform Gradle Plugin
     alias(libs.plugins.changelog) // Gradle Changelog Plugin
     alias(libs.plugins.qodana) // Gradle Qodana Plugin
@@ -32,6 +33,8 @@ repositories {
 // Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
     implementation(libs.clikt)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.core)
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
 
@@ -134,6 +137,13 @@ tasks {
 
     publishPlugin {
         dependsOn(patchChangelog)
+    }
+
+    register<JavaExec>("runCLI") {
+        group = "application"
+        description = "Runs the BDDTestGen CLI"
+        mainClass.set("org.jetbrains.plugins.featurefilegenerator.cli.BatchGenerateFeatureCLIKt")
+        classpath = sourceSets["main"].runtimeClasspath
     }
 }
 

@@ -145,15 +145,11 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State> {
         myState.configurations.forEach { config ->
             println("DEBUG: Loaded configuration -> ${config.name}")
 
-            val (scriptResource, specResource) = when (config.name.lowercase()) {
-                "chatgpt" -> "python/gpt_main.py" to "python/gpt_specifications.json"
-                "gemini" -> "python/gemini_main.py" to "python/gemini_specifications.json"
-                "deepseek" -> "python/deepseek_main.py" to "python/deepseek_specifications.json"
-                else -> null to null
-            }
-
-            if (scriptResource != null && !File(config.scriptFilePath).exists()) {
-                config.scriptFilePath = copyResourceToTempFile(scriptResource, ".py")
+            val specResource = when (config.name.lowercase()) {
+                "chatgpt" -> "python/gpt_specifications.json"
+                "gemini" -> "python/gemini_specifications.json"
+                "deepseek" -> "python/deepseek_specifications.json"
+                else -> null
             }
 
             if (specResource != null && !File(config.parameterSpecFilePath).exists()) {
@@ -183,23 +179,22 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State> {
 
     fun addDefaultConfigurationsIfMissing() {
         val configs = listOf(
-            Triple("ChatGPT", "gpt_main.py", "gpt_specifications.json"),
-            Triple("Gemini", "gemini_main.py", "gemini_specifications.json"),
-            Triple("DeepSeek", "deepseek_main.py", "deepseek_specifications.json")
+            Pair("ChatGPT", "gpt_specifications.json"),
+            Pair("Gemini", "gemini_specifications.json"),
+            Pair("DeepSeek", "deepseek_specifications.json")
         )
 
         val instructionFilePath = getDefaultInstructionFilePath()
 
-        configs.forEach { (name, scriptFile, specFile) ->
+        configs.forEach { (name, specFile) ->
             if (myState.configurations.none { it.name == name }) {
-                val scriptPath = copyResourceToTempFile("python/$scriptFile", ".py")
                 val specPath = copyResourceToTempFile("python/$specFile", ".json")
 
                 val config = LLMConfiguration(
                     name = name,
-                    scriptFilePath = scriptPath,
+                    scriptFilePath = "native",
                     parameterSpecFilePath = specPath,
-                    command = "python3",
+                    command = "native",
                     namedParameters = mutableListOf(
                         StringParam(
                             key = "Instruction Prompt Path",
@@ -242,8 +237,8 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State> {
     }
 
     fun addConfiguration(config: LLMConfiguration) {
-        if (!isValidFilePath(config.scriptFilePath) || !isValidFilePath(config.parameterSpecFilePath)) {
-            throw IllegalArgumentException("Invalid file path(s) provided.")
+        if (!isValidFilePath(config.parameterSpecFilePath)) {
+            throw IllegalArgumentException("Invalid spec file path provided.")
         }
 
         val existingConfig = myState.configurations.find { it.name == config.name }

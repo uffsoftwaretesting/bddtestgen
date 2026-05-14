@@ -1,0 +1,13 @@
+Feature: User Login
+
+User Story:
+As a registered user,
+I want to log in to my account
+So that I can access my profile and settings.
+
+Acceptance Criteria:
+- Email field is required*
+- Password field is required*
+- If email and password are correct, redirect to dashboard.
+- If email or password is incorrect, show error message.
+- "Forgot password" link should be visible.

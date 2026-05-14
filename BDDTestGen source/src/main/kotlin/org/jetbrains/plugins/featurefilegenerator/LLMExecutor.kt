@@ -7,13 +7,15 @@ import kotlinx.coroutines.runBlocking
 import org.jetbrains.plugins.featurefilegenerator.LLMSettings
 import org.jetbrains.plugins.featurefilegenerator.cli.LLMSettingsCLI
 import java.io.File
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.time.Duration
+import kotlinx.serialization.json.*
 
 class LLMExecutor(private val llmSettings: Any) {
 
-    /**
-     * Executes a single LLM based on the name and file path.
-     * This version is used in both CLI mode and the plugin, but in the plugin we use ProgressManager.
-     */
     fun execute(llmName: String, filePath: String, onResult: (String, String) -> Unit) {
         val config = when (llmSettings) {
             is LLMSettings -> llmSettings.getConfigurationByName(llmName)
@@ -21,27 +23,21 @@ class LLMExecutor(private val llmSettings: Any) {
             else -> null
         } ?: throw IllegalArgumentException("LLM '$llmName' not found.")
 
-        // If we're in plugin mode, we use ProgressManager
         if (llmSettings is LLMSettings) {
             ProgressManager.getInstance().run(object : Task.Backgroundable(null, "Generating .feature File ($llmName)", true) {
                 override fun run(indicator: ProgressIndicator) {
-                    indicator.text = "Running LLM script: $llmName..."
+                    indicator.text = "Running LLM: $llmName..."
                     indicator.isIndeterminate = true
                     val result = runProcess(config, filePath)
                     onResult(llmName, result)
                 }
             })
         } else {
-            // CLI Mode: direct execution
             val result = runProcess(config, filePath)
             onResult(llmName, result)
         }
     }
 
-    /**
-     * Executes all configured LLMs sequentially in asynchronous fashion (in plugin mode).
-     * Each execution will occur within a single background task.
-     */
     fun executeBatchAsync(filePath: String, onResult: (String, String) -> Unit) {
         if (llmSettings !is LLMSettings) {
             throw IllegalStateException("Plugin mode requires LLMSettings, not LLMSettingsCLI.")
@@ -56,7 +52,6 @@ class LLMExecutor(private val llmSettings: Any) {
                 for (config in configurations) {
                     indicator.text = "Running ${config.name}..."
                     val result = runProcess(config, filePath)
-                    // The onResult callback may be called outside the progress thread, so we use invokeLater
                     com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater {
                         onResult(config.name, result)
                     }
@@ -65,134 +60,174 @@ class LLMExecutor(private val llmSettings: Any) {
         })
     }
 
-    private fun extractResourceToTempFile(resourcePath: String, prefix: String, suffix: String): String {
-        // Remove "src/main/resources/" if it's there to support the raw relative path in the example
-        val cleanPath = resourcePath.removePrefix("src/main/resources/").removePrefix("/")
-        val inputStream = javaClass.classLoader.getResourceAsStream(cleanPath)
-            ?: throw IllegalArgumentException("Script or resource not found locally nor in classpath: $resourcePath")
+    private fun readResourceOrFile(path: String): String {
+        val file = File(path)
+        if (file.exists()) return file.readText(Charsets.UTF_8)
         
-        val tempFile = File.createTempFile(prefix, suffix)
-        tempFile.deleteOnExit()
-        inputStream.use { input ->
-            tempFile.outputStream().use { output ->
-                input.copyTo(output)
-            }
+        val cleanPath = path.removePrefix("src/main/resources/").removePrefix("/")
+        val inputStream = javaClass.classLoader.getResourceAsStream(cleanPath)
+            ?: throw IllegalArgumentException("Resource not found: $path")
+            
+        return inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+    }
+
+    private fun stripGherkinFormatting(string: String): String {
+        val leftStrip = "```gherkin"
+        val rightStrip = "```"
+        var stripped = string.trim()
+        if (stripped.startsWith(leftStrip)) {
+            stripped = stripped.removePrefix(leftStrip).trim()
         }
-        return tempFile.absolutePath
+        if (stripped.endsWith(rightStrip)) {
+            stripped = stripped.removeSuffix(rightStrip).trim()
+        }
+        return stripped
     }
 
-    private fun resolveFilePath(filePath: String, isPython: Boolean = false): String {
-        val file = File(filePath)
-        if (file.exists()) return file.absolutePath
-        // Try to resolve from classpath
-        return extractResourceToTempFile(filePath, "bddtestgen_script_", if (isPython) ".py" else ".txt")
-    }
-
-    /**
-     * Builds and runs the LLM process based on configuration and input file.
-     */
     private fun runProcess(config: Any, filePath: String): String {
         return try {
-            val commandList = mutableListOf<String>()
+            val providerName = (config as? LLMSettings.LLMConfiguration)?.name 
+                ?: (config as? LLMSettingsCLI.LLMConfiguration)?.name 
+                ?: "Unknown"
 
+            val paramsMap = mutableMapOf<String, String>()
+            
+            // Extract parameters
             when (config) {
                 is LLMSettings.LLMConfiguration -> {
-                    commandList.add(config.command)
-                    commandList.add(resolveFilePath(config.scriptFilePath, isPython = true))
                     config.namedParameters.forEach { param ->
                         if (param.argName.isNotBlank()) {
-                            when (param) {
-                                is LLMSettings.StringParam -> {
-                                    var value = param.value.trim()
-                                    // If this is the instruction prompt, we might need to extract it
-                                    if (param.argName == "--prompt_instruction_path") {
-                                        value = resolveFilePath(value)
-                                    }
-                                    if (value.isNotBlank()) {
-                                        commandList.add(param.argName)
-                                        commandList.add(value)
-                                    }
-                                }
-                                is LLMSettings.ListParam -> {
-                                    val value = param.value.trim()
-                                    if (value.isNotBlank()) {
-                                        commandList.add(param.argName)
-                                        commandList.add(value)
-                                    }
-                                }
-                                is LLMSettings.IntParam -> {
-                                    commandList.add(param.argName)
-                                    commandList.add(param.value.toString())
-                                }
-                                is LLMSettings.DoubleParam -> {
-                                    commandList.add(param.argName)
-                                    commandList.add(param.value.toString().replace(',', '.'))
-                                }
-                                is LLMSettings.BooleanParam -> {
-                                    if (param.value) commandList.add(param.argName)
-                                }
+                            val cleanName = param.argName.removePrefix("--")
+                            val value = when (param) {
+                                is LLMSettings.StringParam -> param.value
+                                is LLMSettings.ListParam -> param.value
+                                is LLMSettings.IntParam -> param.value.toString()
+                                is LLMSettings.DoubleParam -> param.value.toString()
+                                is LLMSettings.BooleanParam -> param.value.toString()
+                                else -> ""
                             }
+                            paramsMap[cleanName] = value
                         }
                     }
                 }
                 is LLMSettingsCLI.LLMConfiguration -> {
-                    commandList.add(config.command)
-                    commandList.add(resolveFilePath(config.scriptFilePath, isPython = true))
                     config.namedParameters.forEach { param ->
                         if (param.argName.isNotBlank()) {
-                            when (param) {
-                                is LLMSettingsCLI.NamedParameter.StringParam -> {
-                                    var value = param.value.trim()
-                                    if (param.argName == "--prompt_instruction_path") {
-                                        value = resolveFilePath(value)
-                                    }
-                                    if (value.isNotBlank()) {
-                                        commandList.add(param.argName)
-                                        commandList.add(value)
-                                    }
-                                }
-                                is LLMSettingsCLI.NamedParameter.IntParam -> {
-                                    commandList.add(param.argName)
-                                    commandList.add(param.value.toString())
-                                }
-                                is LLMSettingsCLI.NamedParameter.DoubleParam -> {
-                                    commandList.add(param.argName)
-                                    commandList.add(param.value.toString().replace(',', '.'))
-                                }
-                                is LLMSettingsCLI.NamedParameter.BooleanParam -> {
-                                    if (param.value) commandList.add(param.argName)
-                                }
+                            val cleanName = param.argName.removePrefix("--")
+                            val value = when (param) {
+                                is LLMSettingsCLI.NamedParameter.StringParam -> param.value
+                                is LLMSettingsCLI.NamedParameter.IntParam -> param.value.toString()
+                                is LLMSettingsCLI.NamedParameter.DoubleParam -> param.value.toString()
+                                is LLMSettingsCLI.NamedParameter.BooleanParam -> param.value.toString()
+                                else -> ""
                             }
+                            paramsMap[cleanName] = value
                         }
                     }
                 }
             }
 
-            // Adds the user story file path parameter
-            commandList.add("--user_story_path")
-            commandList.add(filePath)
+            val apiKey = paramsMap["api_key"]?.takeIf { it.isNotBlank() } ?: return "Error: API Key (--api_key) not provided in configuration."
+            val model = paramsMap["model"] ?: if (providerName.contains("gemini", true)) "gemini-1.5-flash" else "gpt-3.5-turbo"
+            val temperature = paramsMap["temperature"]?.toDoubleOrNull() ?: 0.7
+            val promptPath = paramsMap["prompt_instruction_path"] ?: paramsMap["instruction_file"]
+            
+            val instructionPrompt = promptPath?.let { readResourceOrFile(it) } ?: ""
+            val userStory = File(filePath).readText(Charsets.UTF_8)
 
-            println("🔍 Executing command: ${commandList.joinToString(" ")}")
+            println("🔍 Sending API Request to $providerName (Model: $model)")
 
-            val process = ProcessBuilder(commandList)
-                .directory(File("."))
-                .redirectErrorStream(false) // Handle stderr separately for better CLI feedback
-                .start()
-
-            val output = process.inputStream.bufferedReader().use { it.readText() }
-            val errorOutput = process.errorStream.bufferedReader().use { it.readText() }
-            val exitCode = process.waitFor()
-
-            if (exitCode != 0) {
-                println("❌ Process failed with code: $exitCode")
-                if (errorOutput.isNotBlank()) println("❌ Error Output:\n$errorOutput")
-                return "Error (Code $exitCode):\n$errorOutput"
+            val client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build()
+            
+            val result = if (providerName.contains("gemini", ignoreCase = true)) {
+                executeGemini(client, apiKey, model, temperature, instructionPrompt, userStory)
+            } else {
+                executeOpenAI(client, providerName, apiKey, model, temperature, instructionPrompt, userStory)
             }
-
-            output
+            
+            stripGherkinFormatting(result)
         } catch (e: Exception) {
-            "Error executing the process: ${e.message}"
+            "❌ Error executing the API call: ${e.message}"
         }
+    }
+
+    private fun executeGemini(client: HttpClient, apiKey: String, model: String, temperature: Double, instruction: String, story: String): String {
+        val url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey"
+        
+        val jsonBody = buildJsonObject {
+            putJsonArray("contents") {
+                addJsonObject {
+                    putJsonArray("parts") {
+                        addJsonObject { put("text", instruction) }
+                        addJsonObject { put("text", story) }
+                    }
+                }
+            }
+            putJsonObject("generationConfig") {
+                put("temperature", temperature)
+            }
+        }.toString()
+
+        val request = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+            .build()
+
+        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+        
+        if (response.statusCode() !in 200..299) {
+            return "❌ Gemini API Error (${response.statusCode()}): ${response.body()}"
+        }
+
+        val json = Json.parseToJsonElement(response.body()).jsonObject
+        return json["candidates"]?.jsonArray?.get(0)?.jsonObject
+            ?.get("content")?.jsonObject
+            ?.get("parts")?.jsonArray?.get(0)?.jsonObject
+            ?.get("text")?.jsonPrimitive?.content 
+            ?: "❌ Error: Could not parse Gemini response."
+    }
+
+    private fun executeOpenAI(client: HttpClient, providerName: String, apiKey: String, model: String, temperature: Double, instruction: String, story: String): String {
+        val url = if (providerName.contains("deepseek", ignoreCase = true)) {
+            "https://api.deepseek.com/chat/completions"
+        } else {
+            "https://api.openai.com/v1/chat/completions"
+        }
+
+        val jsonBody = buildJsonObject {
+            put("model", model)
+            put("temperature", temperature)
+            putJsonArray("messages") {
+                addJsonObject {
+                    put("role", "system")
+                    put("content", instruction)
+                }
+                addJsonObject {
+                    put("role", "user")
+                    put("content", story)
+                }
+            }
+        }.toString()
+
+        val request = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer $apiKey")
+            .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+            .build()
+
+        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+        
+        if (response.statusCode() !in 200..299) {
+            return "❌ API Error (${response.statusCode()}): ${response.body()}"
+        }
+
+        val json = Json.parseToJsonElement(response.body()).jsonObject
+        return json["choices"]?.jsonArray?.get(0)?.jsonObject
+            ?.get("message")?.jsonObject
+            ?.get("content")?.jsonPrimitive?.content 
+            ?: "❌ Error: Could not parse OpenAI/DeepSeek response."
     }
 
     fun executeBatchCli(filePath: String, onResult: (String, String) -> Unit) = runBlocking {
@@ -204,7 +239,6 @@ class LLMExecutor(private val llmSettings: Any) {
             throw IllegalStateException("No LLM configuration found.")
         }
         configurations.forEach { config ->
-            // Executes each LLM synchronously
             val result = runProcess(config, filePath)
             onResult(config.name, result)
         }

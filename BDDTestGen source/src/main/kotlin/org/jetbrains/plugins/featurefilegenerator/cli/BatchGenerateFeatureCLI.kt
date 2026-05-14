@@ -29,13 +29,14 @@ class BatchGenerateFeatureCLI : CliktCommand(
             
             runBlocking {
                 executor.executeBatchCli(inputFile.absolutePath) { llmName, result ->
-                    echo("\n=== LLM: \$llmName returned ===")
+                    echo("\n=== LLM: $llmName returned ===")
                     echo(result)
                     echo("===============================\n")
                 }
             }
         } catch (e: Exception) {
-            echo("❌ Error: \${e.message}", err = true)
+            echo("❌ Error: ${e.message}", err = true)
+            e.printStackTrace()
             exitProcess(1)
         }
     }
