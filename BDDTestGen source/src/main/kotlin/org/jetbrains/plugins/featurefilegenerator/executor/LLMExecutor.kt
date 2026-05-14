@@ -79,20 +79,30 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
             .replace("\n", "\\n")
         
         var body = config.apiBodyTemplate ?: "{}"
+        var url = config.apiUrl ?: ""
         
-        // Template replacement
+        // Template replacement for Body and URL
         body = body.replace("{{story}}", storyText)
+        url = url.replace("{{story}}", storyText)
+
         config.namedParameters.forEach { param ->
-            body = body.replace("{{${param.key}}}", param.getValueAsString())
+            val placeholder = "{{${param.key}}}"
+            val value = param.getValueAsString()
+            
+            body = body.replace(placeholder, value)
+            url = url.replace(placeholder, value)
         }
 
         val payload = Json.parseToJsonElement(body).jsonObject
         val path = config.apiResultPath?.split(".")?.toTypedArray() ?: arrayOf("text")
         
-        // We look for api_key in parameters
-        val apiKey = config.namedParameters.find { it.key == "api_key" || it.key == "apiKey" }?.getValueAsString() ?: ""
+        // Smart Authorization: Only send Header if the key wasn't already used in the URL
+        val apiVariable = config.namedParameters.find { it.key == "api_key" || it.key == "apiKey" }
+        val apiKey = if (apiVariable != null && !url.contains(apiVariable.getValueAsString())) {
+            apiVariable.getValueAsString()
+        } else ""
 
-        return callHttpApi(config.apiUrl!!, apiKey, payload, *path)
+        return callHttpApi(url, apiKey, payload, *path)
     }
 
     private fun executeNative(config: LLMModelConfig, filePath: String): String {

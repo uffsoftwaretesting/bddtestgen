@@ -280,10 +280,6 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State>, LLMConfigProvid
     }
 
     fun addConfiguration(config: LLMConfiguration) {
-        if (!isValidFilePath(config.parameterSpecFilePath)) {
-            throw IllegalArgumentException("Invalid spec file path provided.")
-        }
-
         val existingConfig = myState.configurations.find { it.name == config.name }
 
         if (existingConfig == null) {
