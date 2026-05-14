@@ -159,6 +159,14 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State> {
                 if (config.parameterSpecFilePath.isBlank() || config.parameterSpecFilePath.startsWith(tempDir)) {
                     config.parameterSpecFilePath = copyResourceToTempFile(specResource, ".json")
                 }
+                
+                // Force native for default models if they are currently pointing to legacy scripts
+                if (config.scriptFilePath.isBlank() || config.scriptFilePath.startsWith(tempDir)) {
+                    config.scriptFilePath = "native"
+                }
+                if (config.command.isBlank() || config.command.lowercase().contains("python")) {
+                    config.command = "native"
+                }
             }
 
             config.namedParameters = ensureNamedParameters(config.namedParameters)
