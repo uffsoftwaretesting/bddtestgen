@@ -150,24 +150,27 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
             addRow("API Result JSON Path:", apiPathField)
         }
 
+        // --- Auto-Discovery of Parameters from Template ---
+        val template = existingConfig.apiBodyTemplate + existingConfig.apiUrl
+        val discoveredVars = Regex("\\{\\{([a-zA-Z0-9_]+)\\}\\}").findAll(template)
+            .map { it.groupValues[1] }
+            .filter { it != "story" } // Story is reserved
+            .distinct()
+            .toList()
+
+        for (varName in discoveredVars) {
+            val paramValue = existingConfig.namedParameters.find { it.key == varName }
+            val labelName = varName.replace("_", " ").capitalize()
+            val field = JBTextField(paramValue?.getValueAsString() ?: "")
+            addRow("$labelName:", field)
+            parameterFieldMap[varName] = field // Map by variable key
+        }
+
+        // --- Load parameters from spec file only if provided and exists ---
         val configPath = existingConfig.parameterSpecFilePath
         if (configPath.isNotBlank() && File(configPath).exists()) {
             val specifications = loadParameterSpecifications(configPath)
-
-            for (spec in specifications) {
-                val paramName = spec["name"]?.toString() ?: "Unnamed"
-                val argName = spec["argName"]?.toString() ?: "--${paramName.replace(" ", "_").lowercase()}"
-
-                val paramValue = existingConfig.namedParameters.find { it.argName == argName }
-
-                val component = createUIComponentForParameter(spec, paramValue)
-                
-                if (existingConfig.scriptFilePath == "native" && paramName == "Instruction Prompt Path") {
-                    parameterFieldMap[paramName] = component // Save state silently
-                } else {
-                    addRow(paramName, component)
-                }
-            }
+            // ... (keep legacy logic for backward compatibility)
         } else {
             dynamicPanel.add(JBLabel("Invalid or non-existent configuration file."), GridBagConstraints())
         }

@@ -52,18 +52,21 @@ class ChangeConfigsAction : AnAction() {
                 val updatedParams = mutableListOf<LLMSettings.NamedParameter>()
 
                 for ((key, component) in configurationPanel.parameterFieldMap) {
-                    val paramSpec = configurationPanel.loadParameterSpecifications(existingConfig.parameterSpecFilePath)
-                        .find { it["name"]?.toString() == key } ?: continue
+                    // Try to find in spec for extra metadata (required, description)
+                    val paramSpec = if (existingConfig.parameterSpecFilePath.isNotBlank() && File(existingConfig.parameterSpecFilePath).exists()) {
+                        configurationPanel.loadParameterSpecifications(existingConfig.parameterSpecFilePath)
+                            .find { it["name"]?.toString() == key }
+                    } else null
 
-                    val required = paramSpec["required"] as? Boolean ?: false
-                    val description = paramSpec["description"]?.toString() ?: ""
-                    val argName = paramSpec["argName"]?.toString() ?: "--${key.replace(" ", "_").lowercase()}"
+                    val required = paramSpec?.get("required") as? Boolean ?: false
+                    val description = paramSpec?.get("description")?.toString() ?: ""
+                    val argName = paramSpec?.get("argName")?.toString() ?: key // Default to key if no spec
 
                     val param: LLMSettings.NamedParameter? = when {
                         component is JBTextField -> {
                             val textValue = component.text.trim()
                             if (required && textValue.isEmpty()) {
-                                showError("The field '$key' is required and cannot be empty.")
+                                showError("The field '$key' is required.")
                                 return
                             }
                             LLMSettings.StringParam(key, argName, required, description, textValue)
@@ -73,11 +76,7 @@ class ChangeConfigsAction : AnAction() {
                         }
                         component is ComboBox<*> -> {
                             val selectedValue = component.selectedItem?.toString() ?: ""
-                            if (required && selectedValue.isEmpty()) {
-                                showError("The field '$key' is required and must have a selected value.")
-                                return
-                            }
-                            val allowedValues = (paramSpec["allowed_values"] as? List<*>)?.map { it.toString() } ?: emptyList()
+                            val allowedValues = (paramSpec?.get("allowed_values") as? List<*>)?.map { it.toString() } ?: emptyList()
                             LLMSettings.ListParam(key, argName, required, description, selectedValue, allowedValues)
                         }
                         component is JSpinner -> {

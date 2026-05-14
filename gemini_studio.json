@@ -1,0 +1,9 @@
+[
+  {
+    "name": "API Key",
+    "argName": "api_key",
+    "ui_element": "textfield",
+    "required": true,
+    "description": "Sua chave do Google AI Studio"
+  }
+]
