@@ -22,6 +22,9 @@ class LLMExecutorTest {
             scriptFilePath = "native",
             parameterSpecFilePath = dummySpec.absolutePath,
             command = "native",
+            apiUrl = "",
+            apiBodyTemplate = "",
+            apiResultPath = "",
             namedParameters = mutableListOf()
         )
         settings.addConfiguration(emptyConfig)

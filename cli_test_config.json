@@ -1,0 +1,17 @@
+{
+  "llms": [
+    {
+      "name": "GeminiCLI",
+      "apiUrl": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{my_key}}",
+      "apiBodyTemplate": "{\"contents\": [{\"parts\":[{\"text\": \"Generate BDD for: {{story}}\"}]}]}",
+      "apiResultPath": "candidates.0.content.parts.0.text",
+      "namedParameters": [
+        {
+          "type": "string",
+          "argName": "my_key",
+          "value": "DUMMY_KEY"
+        }
+      ]
+    }
+  ]
+}
