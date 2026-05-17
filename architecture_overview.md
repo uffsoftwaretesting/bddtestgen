@@ -1,6 +1,6 @@
 # BDDTestGen Architecture Overview
 
-This diagram represents the modernized architecture of BDDTestGen, following Clean Architecture principles with a clear separation between Domain, Application, and Infrastructure layers.
+This diagram represents the modernized architecture of BDDTestGen, following Clean Architecture principles with a focus on the **Generic API Studio (No-Code)** integration.
 
 ```mermaid
 graph TD
@@ -9,13 +9,15 @@ graph TD
         CLI[Batch CLI - Clikt]
     end
 
-    subgraph Domain_Layer [Domain Layer - Business Logic]
+    subgraph Domain_Layer [Domain Layer - Pure Business Logic]
         Provider[ILLMConfigProvider]
         Model[LLMModelConfig Model]
+        Param[ModelParameter]
     end
 
     subgraph App_Layer [Application Layer - Orchestration]
         Executor[LLMExecutor Engine]
+        Templates[Template Processor]
     end
 
     subgraph Adapters [Infrastructure Adapters]
@@ -23,9 +25,9 @@ graph TD
         SettingsCLI[LLMSettingsCLI - JSON Parser]
     end
 
-    subgraph Execution_Engines [Execution Engines]
-        Native[Native Client - HttpClient]
-        External[External Script Connector - ProcessBuilder]
+    subgraph Connectors [LLM Connectors]
+        Native[Native Built-in Clients]
+        GenericAPI[Generic API Studio - No-Code]
     end
 
     IDE --> Settings
@@ -37,25 +39,31 @@ graph TD
     Executor -- "requests config" --> Provider
     Provider -- "returns" --> Model
     
-    Executor -- "IF native" --> Native
-    Executor -- "IF script" --> External
+    Executor --> Templates
+    Templates -- "resolves {{vars}}" --> Connectors
     
-    Native -- "REST call" --> OpenAI_Gemini[LLM APIs]
-    External -- "Executes" --> PyBash[Custom Python/Bash Scripts]
+    Native -- "REST call" --> BuiltIn[OpenAI / Gemini / DeepSeek]
+    GenericAPI -- "Dynamic REST" --> AnyAPI[Any LLM API Provider]
 
     %% Styling
     classDef domain fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
     classDef infra fill:#fff3e0,stroke:#e65100,stroke-width:2px;
     classDef app fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
     
-    class Provider,Model domain;
+    class Provider,Model,Param domain;
     class Settings,SettingsCLI,IDE,CLI infra;
-    class Executor app;
+    class Executor,Templates app;
 ```
 
 ### Component Details
 
-*   **Domain Layer**: Pure business logic and contracts.
+*   **Domain Layer**: Pure business logic and contracts. Agnostic to IntelliJ or CLI.
 *   **Infrastructure Adapters**: Logic to persist and read configurations (XML for IDE, JSON for CLI).
-*   **Application Layer (LLMExecutor)**: Orchestrates the generation process, deciding between the Native Kotlin engine or the External Script Connector for custom integrations.
-*   **External Interaction**: Native calls via `HttpClient` ensure zero-dependency execution for standard models.
+*   **Template Processor**: Scans request templates for `{{placeholder}}` patterns, enabling auto-discovery of UI variables.
+*   **Generic API Studio**: A declarative connector that eliminates the need for external scripts. It handles dynamic URL construction, JSON payload generation, and Smart Authentication (header vs query param logic).
+*   **Connectors**: Standardized interfaces for communicating with LLM providers using modern `java.net.http.HttpClient`.
+
+### Key Benefits
+1. **Zero-Config Execution**: No local Python or scripts required.
+2. **Auto-Discovery**: UI fields are generated automatically from API templates.
+3. **Portability**: The same configuration works in both the IDE and the CLI.
