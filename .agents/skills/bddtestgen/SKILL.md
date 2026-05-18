@@ -30,7 +30,7 @@ Generate a single `.feature` Gherkin file. You must act according to the followi
 
 ### Step 3: Write the Output Feature File
 Write the natively generated `.feature` Gherkin content directly to the designated output path:
-- **Output Path:** `test_output/chatgpt_output.feature` (located in the root of the user's current workspace).
+- **Output Path:** `test_output/<user_story_name>.feature` (located in the root of the user's current workspace, where `<user_story_name>` is the name of the input user story file, e.g., if input is `checkout.txt`, write to `test_output/checkout.feature`).
 
 ### Step 4: Present the Results
 Show the beautifully generated Gherkin feature scenarios to the user and confirm that the file was successfully saved.
