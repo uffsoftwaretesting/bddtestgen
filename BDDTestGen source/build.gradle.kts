@@ -145,6 +145,27 @@ tasks {
         mainClass.set("org.jetbrains.plugins.featurefilegenerator.cli.BatchGenerateFeatureCLIKt")
         classpath = sourceSets["main"].runtimeClasspath
     }
+
+    register<Jar>("cliJar") {
+        group = "build"
+        description = "Assembles a standalone fat JAR containing the CLI and all dependencies"
+        archiveClassifier.set("cli")
+
+        manifest {
+            attributes["Main-Class"] = "org.jetbrains.plugins.featurefilegenerator.cli.BatchGenerateFeatureCLIKt"
+        }
+
+        from(sourceSets["main"].output)
+
+        dependsOn(configurations.runtimeClasspath)
+        from({
+            configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) }
+        }) {
+            exclude("META-INF/INDEX.LIST", "META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/MANIFEST.MF")
+        }
+
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
 }
 
 intellijPlatformTesting {

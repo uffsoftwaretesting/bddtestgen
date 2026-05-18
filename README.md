@@ -73,32 +73,32 @@ To execute a generation:
 *   **`--config` (or `-c`)**: Path to a JSON configuration file defining the LLM profiles.
 *   **`<inputFilePath>`**: Path to the plain-text user story file.
 
-### Running from Compiled JAR
+### Running from Standalone CLI JAR (Official)
 
-To run the CLI standalone without Gradle, you can package the plugin distribution and run it directly with `java` by loading the compiled class files and dependencies in the classpath:
+You can package and execute the BDDTestGen CLI as a completely standalone "Fat JAR" containing all dependencies. This allows you to run the CLI directly from any terminal using standard `java -jar` without requiring Gradle or manual classpath configurations.
 
-1. **Package the Distribution:**
-   Run the following task in the project root to generate the packaged `.zip` file:
+1. **Build the Standalone JAR:**
+   Run the following task in the project root:
    ```bash
-   ./gradlew buildPlugin
+   ./gradlew cliJar
    ```
-   This will generate the distribution zip file in `BDDTestGen source/build/distributions/BDDTestGen-<version>.zip`.
+   This will assemble the fully self-contained JAR file at:
+   `BDDTestGen source/build/libs/BDDTestGen-<version>-cli.jar` (e.g. `BDDTestGen-2.3.1-cli.jar`).
 
-2. **Unzip the Distribution:**
-   Extract the generated `.zip` file. The extracted folder contains a `lib/` directory containing the main `BDDTestGen-<version>.jar` alongside all required dependencies (Clikt, kotlinx-serialization, kotlinx-coroutines, etc.).
+2. **Execute the JAR:**
+   You can copy this single `.jar` file anywhere on your system and execute it directly using standard Java command execution:
+   ```bash
+   java -jar BDDTestGen-2.3.1-cli.jar --config <configFilePath> <inputFilePath>
+   ```
 
-3. **Execute the JAR:**
-   Navigate into the extracted folder (or make sure the `lib` directory is accessible) and run the main class `org.jetbrains.plugins.featurefilegenerator.cli.BatchGenerateFeatureCLIKt` using the wildcard `lib/*` to load all jars into the classpath:
-
-   *   **Command (Windows/Linux/macOS):**
-       ```bash
-       java -cp "lib/*" org.jetbrains.plugins.featurefilegenerator.cli.BatchGenerateFeatureCLIKt --config <configFilePath> <inputFilePath>
-       ```
-
-   *(Note: Make sure to surround `"lib/*"` with double quotes so your terminal doesn't expand the asterisk wildcard).*
+To see all available CLI options:
+```bash
+java -jar BDDTestGen-2.3.1-cli.jar --help
+```
 
 
 ### Configuration JSON Format
+
 
 The CLI is completely native. You provide the JSON configuration with the required parameters, and the Kotlin engine takes care of the REST HTTP calls automatically.
 
