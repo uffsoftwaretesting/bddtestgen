@@ -1,0 +1,34 @@
+# IntelliJ / JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Gradle Build Artifacts
+.gradle/
+build/
+BDDTestGen source/build/
+BDDTestGen source/.gradle/
+
+# Python Cache & MCP relics
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+venv/
+.venv/
+mcp_execution.log
+
+# BDDTestGen outputs & test inputs
+test_story.txt
+test_story_checkout.txt
+results/
+video/
+BDDTestGen source/test_output/
+BDDTestGen source/output_folder/
+
+# Local configuration overrides
+*.local
+.env
