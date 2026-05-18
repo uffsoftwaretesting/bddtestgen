@@ -142,9 +142,20 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
         val configPath = existingConfig.parameterSpecFilePath
         if (configPath.isNotBlank() && File(configPath).exists()) {
             val specifications = loadParameterSpecifications(configPath)
-            // ... (keep legacy logic for backward compatibility)
-        } else {
-            dynamicPanel.add(JBLabel("Invalid or non-existent configuration file."), GridBagConstraints())
+            for (spec in specifications) {
+                val paramName = spec["name"]?.toString() ?: "Unnamed"
+                
+                // For native configurations, hide hardcoded/natively handled fields (e.g. prompt path, output dir, debug)
+                if (existingConfig.scriptFilePath == "native") {
+                    if (paramName == "Instruction Prompt Path" || paramName == "Output Directory" || paramName == "Debug") {
+                        continue
+                    }
+                }
+                
+                val paramValue = existingConfig.namedParameters.find { it.key == paramName }
+                val component = createUIComponentForParameter(spec, paramValue)
+                addRow(paramName, component)
+            }
         }
 
         dynamicPanel.revalidate()
