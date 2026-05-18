@@ -2,13 +2,13 @@
   "llms": [
     {
       "name": "ChatGPT-Test",
-      "scriptFilePath": "python/gpt_main.py",
-      "command": "python",
+      "scriptFilePath": "native",
+      "command": "native",
       "namedParameters": [
         { "type": "string", "argName": "--api_key", "value": "sk-proj-placeholder-key-1234567890abcdef" },
-        { "type": "string", "argName": "--model", "value": "gpt-3.5-turbo" },
+        { "type": "string", "argName": "--model", "value": "gpt-4o-mini" },
         { "type": "double", "argName": "--temperature", "value": 0.7 },
-        { "type": "string", "argName": "--prompt_instruction_path", "value": "python/message_1_response=user.txt" },
+        { "type": "string", "argName": "--prompt_instruction_path", "value": "prompt.txt" },
         { "type": "string", "argName": "--output_dir_path", "value": "test_output" }
       ]
     }
