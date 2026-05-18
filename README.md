@@ -73,6 +73,31 @@ To execute a generation:
 *   **`--config` (or `-c`)**: Path to a JSON configuration file defining the LLM profiles.
 *   **`<inputFilePath>`**: Path to the plain-text user story file.
 
+### Running from Compiled JAR
+
+To run the CLI standalone without Gradle, you can package the plugin distribution and run it directly with `java` by loading the compiled class files and dependencies in the classpath:
+
+1. **Package the Distribution:**
+   Run the following task in the project root to generate the packaged `.zip` file:
+   ```bash
+   ./gradlew buildPlugin
+   ```
+   This will generate the distribution zip file in `BDDTestGen source/build/distributions/BDDTestGen-<version>.zip`.
+
+2. **Unzip the Distribution:**
+   Extract the generated `.zip` file. The extracted folder contains a `lib/` directory containing the main `BDDTestGen-<version>.jar` alongside all required dependencies (Clikt, kotlinx-serialization, kotlinx-coroutines, etc.).
+
+3. **Execute the JAR:**
+   Navigate into the extracted folder (or make sure the `lib` directory is accessible) and run the main class `org.jetbrains.plugins.featurefilegenerator.cli.BatchGenerateFeatureCLIKt` using the wildcard `lib/*` to load all jars into the classpath:
+
+   *   **Command (Windows/Linux/macOS):**
+       ```bash
+       java -cp "lib/*" org.jetbrains.plugins.featurefilegenerator.cli.BatchGenerateFeatureCLIKt --config <configFilePath> <inputFilePath>
+       ```
+
+   *(Note: Make sure to surround `"lib/*"` with double quotes so your terminal doesn't expand the asterisk wildcard).*
+
+
 ### Configuration JSON Format
 
 The CLI is completely native. You provide the JSON configuration with the required parameters, and the Kotlin engine takes care of the REST HTTP calls automatically.
