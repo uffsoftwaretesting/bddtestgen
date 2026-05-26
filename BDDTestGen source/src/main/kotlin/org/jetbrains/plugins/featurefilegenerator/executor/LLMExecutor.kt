@@ -94,7 +94,7 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
         }
 
         val payload = Json.parseToJsonElement(body).jsonObject
-        val path = config.apiResultPath?.split(".")?.toTypedArray() ?: arrayOf("text")
+        val path = parseResultPath(config.apiResultPath)
         
         // Smart Authorization: Only send Header if the key wasn't already used in the URL
         val apiVariable = config.namedParameters.find { it.key == "api_key" || it.key == "apiKey" }
@@ -244,6 +244,25 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
         } catch (e: Exception) {
             "❌ Error processing JSON: ${e.message}"
         }
+    }
+
+    /**
+     * Parses an API result path expression into a flat list of traversal segments.
+     *
+     * Accepts both dot notation and bracket notation for array indices:
+     *   "candidates.0.content.parts.0.text"           → [candidates, 0, content, parts, 0, text]
+     *   "candidates[0].content.parts[0].text"         → [candidates, 0, content, parts, 0, text]
+     *   "choices[0].message.content"                  → [choices, 0, message, content]
+     *
+     * Empty / null input falls back to ["text"] for backward compatibility.
+     */
+    internal fun parseResultPath(rawPath: String?): Array<String> {
+        if (rawPath.isNullOrBlank()) return arrayOf("text")
+        // Normalize bracket notation "foo[N]" to dot notation "foo.N", then split on dots.
+        val normalized = rawPath.replace(Regex("\\[(\\d+)]"), ".$1")
+        return normalized.split(".")
+            .filter { it.isNotEmpty() }
+            .toTypedArray()
     }
 
     private fun saveResultToFile(dir: String, modelName: String, content: String) {
