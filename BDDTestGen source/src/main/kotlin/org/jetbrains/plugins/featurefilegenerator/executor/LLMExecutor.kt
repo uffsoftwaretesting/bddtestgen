@@ -311,18 +311,38 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
     }
 
     internal fun stripGherkinFormatting(string: String): String {
-        val leftStripGherkin = "```gherkin"
-        val leftStripGeneric = "```"
-        val rightStrip = "```"
-        var stripped = string.trim()
-        
-        if (stripped.startsWith(leftStripGherkin) && stripped.endsWith(rightStrip)) {
-            stripped = stripped.removePrefix(leftStripGherkin).removeSuffix(rightStrip)
-        } else if (stripped.startsWith(leftStripGeneric) && stripped.endsWith(rightStrip)) {
-            stripped = stripped.removePrefix(leftStripGeneric).removeSuffix(rightStrip)
+        val stripped = string.trim()
+
+        // 1. Mixed-content case: model returned the gherkin embedded inside a
+        //    larger markdown response (Acceptance Criteria, Test Cases table,
+        //    Recommendations, etc.). Extract the first fenced gherkin block.
+        //    Prefers ```gherkin … ``` then falls back to a plain ``` … ```
+        //    block whose body looks like a Gherkin .feature (starts with
+        //    "Feature:" or "Funcionalidade:" — the prompt asks the model to
+        //    keep the user-story language, so accept the localized keyword
+        //    too).
+        val gherkinFence = Regex("```gherkin\\s*\\n([\\s\\S]*?)```", RegexOption.IGNORE_CASE)
+        gherkinFence.find(stripped)?.let { return it.groupValues[1].trim() }
+
+        val anyFence = Regex("```\\s*\\n([\\s\\S]*?)```")
+        for (match in anyFence.findAll(stripped)) {
+            val body = match.groupValues[1].trim()
+            if (body.startsWith("Feature:") || body.startsWith("Funcionalidade:")) {
+                return body
+            }
         }
-        
-        return stripped.trim()
+
+        // 2. Fully-fenced case: the entire response is a single ```gherkin
+        //    block (no surrounding prose). Strip the wrapper.
+        if (stripped.startsWith("```gherkin") && stripped.endsWith("```")) {
+            return stripped.removePrefix("```gherkin").removeSuffix("```").trim()
+        }
+        if (stripped.startsWith("```") && stripped.endsWith("```")) {
+            return stripped.removePrefix("```").removeSuffix("```").trim()
+        }
+
+        // 3. Already-plain case: no fences at all — return as-is.
+        return stripped
     }
 
     private fun readResourceOrFile(path: String): String {
