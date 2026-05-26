@@ -28,6 +28,10 @@ results/
 video/
 BDDTestGen source/test_output/
 BDDTestGen source/output_folder/
+# Generated .feature files dropped next to the project when running
+# the plugin / CLI (e.g. gemini_output.feature, gpt_output.feature,
+# deepseek_output.feature, or any *_output.feature from a custom LLM).
+*_output.feature
 
 # Local configuration overrides
 *.local
