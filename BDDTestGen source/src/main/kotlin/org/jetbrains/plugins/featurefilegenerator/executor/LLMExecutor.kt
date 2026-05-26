@@ -74,21 +74,54 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
     }
 
     private fun executeGenericApi(config: LLMModelConfig, filePath: String): String {
-        val storyText = File(filePath).readText()
-            .replace("\"", "\\\"") // Escape quotes for JSON
-            .replace("\n", "\\n")
-        
+        val rawStory = File(filePath).readText()
+
+        // Resolve the BDD instruction prompt. The native paths
+        // (executeGemini/executeOpenAI/executeDeepSeek) prepend this to every
+        // user story; without it the model has no guidance to emit Gherkin and
+        // tends to reply with prose instead. Custom Generic API configs were
+        // missing this behavior, so we apply it here too — either via an
+        // explicit "{{instruction}}" placeholder in the body template, or by
+        // auto-prepending the instruction to "{{story}}" when no explicit
+        // placeholder is present.
+        val instructionPath = config.namedParameters
+            .find { it.key == "Instruction Prompt Path" }
+            ?.getValueAsString()
+        val instructionText = if (!instructionPath.isNullOrBlank()) {
+            readResourceOrFile(instructionPath)
+        } else {
+            readResourceOrFile("python/message_1_response=user.txt")
+        }
+
         var body = config.apiBodyTemplate ?: "{}"
         var url = config.apiUrl ?: ""
-        
+
+        val templateHasInstruction = body.contains("{{instruction}}") || url.contains("{{instruction}}")
+        val effectiveStory = if (templateHasInstruction || instructionText.isBlank()) {
+            rawStory
+        } else {
+            "$instructionText\n\nUser Story:\n$rawStory"
+        }
+
+        val escapedStory = effectiveStory
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+        val escapedInstruction = instructionText
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+
         // Template replacement for Body and URL
-        body = body.replace("{{story}}", storyText)
-        url = url.replace("{{story}}", storyText)
+        body = body.replace("{{instruction}}", escapedInstruction)
+        url = url.replace("{{instruction}}", escapedInstruction)
+        body = body.replace("{{story}}", escapedStory)
+        url = url.replace("{{story}}", escapedStory)
 
         config.namedParameters.forEach { param ->
             val placeholder = "{{${param.key}}}"
             val value = param.getValueAsString()
-            
+
             body = body.replace(placeholder, value)
             url = url.replace(placeholder, value)
         }
