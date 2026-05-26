@@ -150,7 +150,7 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
 
     private fun executeOpenAI(paramsMap: Map<String, String>, instruction: String, story: String): String {
         val apiKey = paramsMap["--api_key"] ?: throw IllegalArgumentException("API Key missing.")
-        val model = paramsMap["--model"] ?: "gpt-4o"
+        val model = paramsMap["--model"] ?: "gpt-5.5"
         val temp = paramsMap["--temperature"]?.toDoubleOrNull() ?: 0.7
 
         val payload = buildJsonObject {
@@ -167,7 +167,7 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
 
     private fun executeGemini(paramsMap: Map<String, String>, instruction: String, story: String): String {
         val apiKey = paramsMap["--api_key"] ?: throw IllegalArgumentException("API Key missing.")
-        val model = paramsMap["--model"] ?: "gemini-1.5-flash"
+        val model = paramsMap["--model"] ?: "gemini-3.5-flash"
         
         val url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey"
         
@@ -181,12 +181,12 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
             })
         }
 
-        return callHttpApi(url, "", payload, "candidates", "content", "parts", "0", "text")
+        return callHttpApi(url, "", payload, "candidates", "0", "content", "parts", "0", "text")
     }
 
     private fun executeDeepSeek(paramsMap: Map<String, String>, instruction: String, story: String): String {
         val apiKey = paramsMap["--api_key"] ?: throw IllegalArgumentException("API Key missing.")
-        val model = paramsMap["--model"] ?: "deepseek-chat"
+        val model = paramsMap["--model"] ?: "deepseek-v4-flash"
         val temp = paramsMap["--temperature"]?.toDoubleOrNull() ?: 0.7
 
         val payload = buildJsonObject {
