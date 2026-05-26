@@ -58,6 +58,9 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State>, LLMConfigProvid
         @Attribute("apiResultPath")
         var apiResultPath: String = "",
 
+        @Attribute("outputDirectory")
+        var outputDirectory: String = "",
+
         @XCollection(
             propertyElementName = "parameters",
             style = XCollection.Style.v2,
@@ -342,6 +345,7 @@ fun LLMSettings.LLMConfiguration.toDomain() = LLMModelConfig(
     apiUrl = this.apiUrl,
     apiBodyTemplate = this.apiBodyTemplate,
     apiResultPath = this.apiResultPath,
+    outputDirectory = this.outputDirectory,
     namedParameters = this.namedParameters.map { it.toDomain() }
 )
 

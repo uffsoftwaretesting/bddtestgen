@@ -19,6 +19,17 @@ class BatchGenerateFeatureFileAction : AnAction() {
 
         // Uses LLMSettings from the IntelliJ Plugin
         val llmSettings = LLMSettings.getInstance()
+
+        // Default any blank outputDirectory to the current project's root so
+        // every batch run produces a .feature file on disk.
+        project.basePath?.let { basePath ->
+            llmSettings.getConfigurations().forEach { cfg ->
+                if (cfg.outputDirectory.isBlank()) {
+                    cfg.outputDirectory = basePath
+                }
+            }
+        }
+
         val executor = LLMExecutor(llmSettings)
 
         executor.executeBatchAsync(filePath) { llmName, result ->

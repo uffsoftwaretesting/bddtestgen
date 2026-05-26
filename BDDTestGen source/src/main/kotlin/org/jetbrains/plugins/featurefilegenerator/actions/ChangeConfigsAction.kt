@@ -94,10 +94,14 @@ class ChangeConfigsAction : AnAction() {
                 val apiUrlField = configurationPanel.parameterFieldMap["API URL:"] as? JBTextField
                 val apiBodyField = configurationPanel.parameterFieldMap["API Body Template:"] as? JBTextField
                 val apiPathField = configurationPanel.parameterFieldMap["API Result JSON Path:"] as? JBTextField
+                val outputDirField = configurationPanel.parameterFieldMap["Output Directory:"] as? JBTextField
 
                 val updatedApiUrl = apiUrlField?.text?.trim() ?: existingConfig.apiUrl
                 val updatedApiBody = apiBodyField?.text?.trim() ?: existingConfig.apiBodyTemplate
                 val updatedApiPath = apiPathField?.text?.trim() ?: existingConfig.apiResultPath
+                val updatedOutputDir = outputDirField?.text?.trim()?.ifBlank {
+                    project.basePath ?: System.getProperty("user.home")
+                } ?: existingConfig.outputDirectory
 
                 if (existingConfig.scriptFilePath != "native" && updatedApiUrl.isEmpty()) {
                     showError("API URL is required for custom configurations.")
@@ -123,6 +127,7 @@ class ChangeConfigsAction : AnAction() {
                     apiUrl = updatedApiUrl,
                     apiBodyTemplate = updatedApiBody,
                     apiResultPath = updatedApiPath,
+                    outputDirectory = updatedOutputDir,
                     namedParameters = updatedParams
                 )
 

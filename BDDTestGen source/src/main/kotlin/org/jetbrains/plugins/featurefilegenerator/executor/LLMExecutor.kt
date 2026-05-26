@@ -102,7 +102,15 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
             apiVariable.getValueAsString()
         } else ""
 
-        return callHttpApi(url, apiKey, payload, *path)
+        val result = callHttpApi(url, apiKey, payload, *path)
+        val strippedResult = stripGherkinFormatting(result)
+
+        // Persist the generated feature file to the configured output directory.
+        if (config.outputDirectory.isNotBlank() && !strippedResult.startsWith("❌ Error")) {
+            saveResultToFile(config.outputDirectory, config.name, strippedResult)
+        }
+
+        return strippedResult
     }
 
     private fun executeNative(config: LLMModelConfig, filePath: String): String {
@@ -119,13 +127,15 @@ class LLMExecutor(private val configProvider: LLMConfigProvider) {
         }
 
         val strippedResult = stripGherkinFormatting(result)
-        
-        // Saving logic (Infrastructure)
-        val outputDir = paramsMap["--output_dir_path"]
-        if (!outputDir.isNullOrBlank() && !strippedResult.startsWith("❌ Error")) {
+
+        // Saving logic (Infrastructure). Prefer the top-level outputDirectory
+        // field; fall back to the legacy --output_dir_path namedParameter for
+        // backward compatibility with previously saved configurations.
+        val outputDir = config.outputDirectory.ifBlank { paramsMap["--output_dir_path"] ?: "" }
+        if (outputDir.isNotBlank() && !strippedResult.startsWith("❌ Error")) {
             saveResultToFile(outputDir, config.name, strippedResult)
         }
-        
+
         return strippedResult
     }
 

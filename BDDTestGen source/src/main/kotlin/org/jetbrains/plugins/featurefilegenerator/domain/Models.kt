@@ -13,6 +13,9 @@ data class LLMModelConfig(
     val apiUrl: String? = null,
     val apiBodyTemplate: String? = null,
     val apiResultPath: String? = null,
+    // Output folder for the generated .feature file. Configurable for both
+    // native and custom configurations; defaults to project root at the UI layer.
+    val outputDirectory: String = "",
     val namedParameters: List<ModelParameter> = emptyList()
 )
 

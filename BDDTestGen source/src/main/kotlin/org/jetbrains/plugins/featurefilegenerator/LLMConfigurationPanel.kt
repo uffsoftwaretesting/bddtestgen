@@ -111,13 +111,21 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
         val nameField = JBTextField(existingConfig.name)
         addRow("LLM Name:", nameField)
 
+        // Output Directory is shown for ALL configurations (native + custom).
+        // Falls back to the current project's root directory when not set.
+        val outputDirDefault = existingConfig.outputDirectory.ifBlank {
+            project?.basePath ?: System.getProperty("user.home")
+        }
+        val outputDirField = JBTextField(outputDirDefault)
+        addRow("Output Directory:", outputDirField)
+
         if (existingConfig.scriptFilePath != "native") {
             val apiUrlField = JBTextField(existingConfig.apiUrl)
             addRow("API URL:", apiUrlField)
-            
+
             val apiBodyField = JBTextField(existingConfig.apiBodyTemplate)
             addRow("API Body Template:", apiBodyField)
-            
+
             val apiPathField = JBTextField(existingConfig.apiResultPath)
             addRow("API Result JSON Path:", apiPathField)
         }
@@ -274,12 +282,16 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
         val nameField = JBTextField()
         addRow("LLM Name:", nameField)
 
+        // Default Output Directory to the current project's root.
+        val outputDirField = JBTextField(project?.basePath ?: System.getProperty("user.home"))
+        addRow("Output Directory:", outputDirField)
+
         val apiUrlField = JBTextField()
         addRow("API URL:", apiUrlField)
-        
+
         val apiBodyField = JBTextField()
         addRow("API Body Template:", apiBodyField)
-        
+
         val apiPathField = JBTextField()
         addRow("API Result JSON Path:", apiPathField)
 
@@ -290,7 +302,8 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
                     nameField.text,
                     apiUrlField.text,
                     apiBodyField.text,
-                    apiPathField.text
+                    apiPathField.text,
+                    outputDirField.text
                 )
             }
         }
@@ -300,7 +313,7 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
         dynamicPanel.repaint()
     }
 
-    private fun saveNewConfiguration(name: String, apiUrl: String, body: String, path: String) {
+    private fun saveNewConfiguration(name: String, apiUrl: String, body: String, path: String, outputDir: String) {
         if (name.isBlank() || apiUrl.isBlank() || body.isBlank()) {
             JOptionPane.showMessageDialog(this, "Name, API URL and Body Template are required!", "Error", JOptionPane.ERROR_MESSAGE)
             return
@@ -313,6 +326,11 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
             return
         }
 
+        // Fallback to project root if the user cleared the field.
+        val effectiveOutputDir = outputDir.ifBlank {
+            project?.basePath ?: System.getProperty("user.home")
+        }
+
         // Create new configuration
         val newConfiguration = LLMSettings.LLMConfiguration(
             name = name,
@@ -321,7 +339,8 @@ class LLMConfigurationPanel(private val project: Project?) : JPanel(BorderLayout
             command = "", // Legacy field
             apiUrl = apiUrl,
             apiBodyTemplate = body,
-            apiResultPath = path
+            apiResultPath = path,
+            outputDirectory = effectiveOutputDir
         )
 
         try {

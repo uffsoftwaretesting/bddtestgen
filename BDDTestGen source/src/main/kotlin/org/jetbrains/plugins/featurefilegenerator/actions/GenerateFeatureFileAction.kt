@@ -28,6 +28,15 @@ class GenerateFeatureFileAction : AnAction() {
         val selectedLLM = settings.getSelectedLLM()!!
         val config = settings.getConfigurationByName(selectedLLM)!!
 
+        // If the user never opened the settings dialog, the output directory may
+        // still be blank — default it to the current project's root so the
+        // generated .feature file is always persisted.
+        if (config.outputDirectory.isBlank()) {
+            project.basePath?.let { basePath ->
+                config.outputDirectory = basePath
+            }
+        }
+
         // Start the execution of the process with a progress indicator
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Generating .feature File", true) {
             override fun run(indicator: ProgressIndicator) {
