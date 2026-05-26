@@ -204,6 +204,25 @@ class LLMSettings : PersistentStateComponent<LLMSettings.State>, LLMConfigProvid
 
             config.namedParameters = ensureNamedParameters(config.namedParameters)
 
+            // Self-heal: native configs without an "Instruction Prompt Path"
+            // parameter would send requests with no BDD instruction, causing
+            // the model to reply with prose instead of a .feature file. This
+            // can happen if a previous version's settings dialog wiped the
+            // hidden parameter on save.
+            if (specResource != null &&
+                config.namedParameters.none { it.key == "Instruction Prompt Path" }) {
+                println("DEBUG: Restoring missing Instruction Prompt Path for ${config.name}")
+                config.namedParameters.add(
+                    StringParam(
+                        key = "Instruction Prompt Path",
+                        argName = "--instruction_file",
+                        required = true,
+                        description = "Path to the instruction prompt file",
+                        value = copyResourceToTempFile("python/message_1_response=user.txt", ".txt")
+                    )
+                )
+            }
+
             config.namedParameters.forEach { param ->
                 if (param is StringParam && param.key == "Instruction Prompt Path") {
                     // Only update if it points to our managed temp space

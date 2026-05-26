@@ -108,13 +108,21 @@ class ChangeConfigsAction : AnAction() {
                     return
                 }
 
-                // ✅ Preserve unchecked booleans
-                val existingBooleanParams = existingConfig.namedParameters.filterIsInstance<LLMSettings.BooleanParam>()
-                for (param in existingBooleanParams) {
-                    if (updatedParams.none { it.key == param.key }) {
-                        updatedParams.add(
+                // ✅ Preserve hidden parameters that the UI didn't render
+                // (e.g. native configs hide "Instruction Prompt Path", "Debug",
+                // and "Output Directory" — losing those StringParams on save
+                // silently breaks features like the BDD instruction prompt that
+                // tells the model to emit a .feature file).
+                //
+                // For booleans, unrendered means "unchecked" (default to false).
+                // For everything else, keep whatever was already persisted.
+                for (param in existingConfig.namedParameters) {
+                    if (updatedParams.any { it.key == param.key }) continue
+                    when (param) {
+                        is LLMSettings.BooleanParam -> updatedParams.add(
                             LLMSettings.BooleanParam(param.key, param.argName, param.required, param.description, false)
                         )
+                        else -> updatedParams.add(param)
                     }
                 }
 
